@@ -27,9 +27,6 @@
     <ClCompile Include="src\thirdparty\imgui\imgui_demo.cpp">
       <Filter>src\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="src\thirdparty\imgui\gl3w.c">
-      <Filter>src\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="src\thirdparty\imgui\imgui_draw.cpp">
       <Filter>src\imgui</Filter>
     </ClCompile>
@@ -47,6 +44,9 @@
     </ClCompile>
     <ClCompile Include="src\thirdparty\imgui\imgui.cpp">
       <Filter>src\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\thirdparty\imgui\examples\libs\gl3w\GL\gl3w.c">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
