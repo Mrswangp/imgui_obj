@@ -155,6 +155,12 @@
     <ClCompile Include="src\thirdparty\imgui\imgui_draw.cpp" />
     <ClCompile Include="src\thirdparty\imgui\imgui_impl_glfw_gl3.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\shader\frashader.h" />
+    <ClInclude Include="src\shader\lamp_frasha.h" />
+    <ClInclude Include="src\shader\lamp_versha.h" />
+    <ClInclude Include="src\shader\vershader.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
