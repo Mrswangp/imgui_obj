@@ -7,7 +7,7 @@ namespace shader {
 		"void main()\n"
 		"{\n"
 		"//set alle 4 vector values to 1.0\n"
-		"FragColor = vec4(0);\n"
+		"FragColor = vec4(1.0);\n"
 		"}\n\0";
 }
 #endif // !LAMP_FRAGMENT
