@@ -15,7 +15,7 @@ float deltatime = 0.0f;
 float lastframe = 0.0f;
 float radius = 3.0f;
  //lighting
-glm::vec3 lightPos(1.2, 1, 1);
+glm::vec3 lightPos(1.2, 1, 1.5);
 //glm::vec3 pos = glm::vec3(radius, 0, radius); // Camera is at (4,3,3), in World Space
 glm::vec3 pos = glm::vec3(0,0, radius); // Camera is at (4,3,3), in World Space
 glm::vec3 lookAtPos = glm::vec3(0, 0, -1);
@@ -134,7 +134,7 @@ int main()
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec2> texture;
     std::vector<glm::vec3> normals; // Won't be used at the moment.
-    bool res =obj::load_obj("resource/test_new.obj", vertices, texture, normals);
+    auto res =obj::load_obj("resource/cube.obj", vertices, texture, normals);
     if (!res) {
         printf("load obj file failed!");
         return -1;
@@ -156,12 +156,18 @@ int main()
         3,        // size
         GL_FLOAT, // type
         GL_FALSE, // normalized?
-        3 * sizeof(float),        // stride
+        0,        // stride
         (void*)0 // array buffer offset
     );
     glEnableVertexAttribArray(0);
-    
-
+    // add normal 
+    GLuint normalbuffer;
+    glGenBuffers(1, &normalbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+  
+    glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+    glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,(void *)0);
+    glEnableVertexAttribArray(1);
     GLuint lightbuffer, lightVAO;
     glGenVertexArrays(1, &lightVAO);
     glBindVertexArray(lightVAO);
@@ -180,8 +186,9 @@ int main()
     glEnableVertexAttribArray(0);
     //glm::mat4 RotationMatrix45 = glm::rotate((float)3.14f / 4, glm::vec3(0, 1, 0));
     glm::mat4 RotationMatrix45 = glm::rotate(glm::radians(45.0f), glm::vec3(0, 1, 0));
-    glm::vec4 objectColor = glm::vec4(0, 1, 0,1);
-    glm::vec4 lightColor = glm::vec4(1, 1, 1,1);
+    glm::vec3 objectColor = glm::vec3(0, 1, 0);
+    glm::vec3 lightColor = glm::vec3(1, 1, 1);
+    int ShininessValue = 2;
     float transparency =1.0f;
     // äÖÈ¾Ñ­»·
     const unsigned int SCR_WIDTH = 800;
@@ -189,7 +196,7 @@ int main()
     const float ZOOM = 45.0f;
     while (!glfwWindowShouldClose(window))
     {
-        float currentframe = glfwGetTime();
+        auto currentframe = glfwGetTime();
         deltatime = currentframe - lastframe;
         lastframe = currentframe;
         processInput(window);
@@ -226,12 +233,13 @@ int main()
         }
        
         ImGui::SliderFloat("viewField", &viewField, 0.0f, 90.0f, "viewField = %.3f");
-        ImGui::SliderFloat("radius", &radius, 0.0f, 20.0f, "radius = %.3f");
-        ImGui::ColorEdit4("object color", (float*)&objectColor, ImGuiColorEditFlags_AlphaBar);
-        ImGui::ColorEdit4("light color", (float*)&lightColor, ImGuiColorEditFlags_AlphaBar);
-        ImGui::SliderFloat("transparency", (float*)&transparency, 0.0f, 20.0f, "transparency = %.3f");
-        glUniform4fv(glGetUniformLocation(objprogramID,"objectColor"),1, &objectColor[0]);
-        glUniform4fv(glGetUniformLocation(objprogramID, "lightColor"), 1, &lightColor[0]);
+         ImGui::SliderInt("Shininess", &ShininessValue, 2, 256);
+       // ImGui::SliderFloat("radius", &radius, 0.0f, 20.0f, "radius = %.3f");
+        ImGui::ColorEdit3("object color", (float*)&objectColor);
+        ImGui::ColorEdit3("light color", (float*)&lightColor);
+       // ImGui::SliderFloat("transparency", (float*)&transparency, 0.0f, 20.0f, "transparency = %.3f");
+        glUniform3fv(glGetUniformLocation(objprogramID,"objectColor"),1, &objectColor[0]);
+        glUniform3fv(glGetUniformLocation(objprogramID, "lightColor"), 1, &lightColor[0]);
         ImGui::End();
 
         //if (show_demo_window)
@@ -259,11 +267,23 @@ int main()
         glDrawArrays(GL_TRIANGLES, 0, 36);
         //render obj
         glUseProgram(objprogramID);
+        GLuint ShininessID = glGetUniformLocation(objprogramID,"Shininess");
+        glUniform1i(ShininessID, ShininessValue);
         // Get a handle for our "MVP" uniform
-        GLuint MatrixID = glGetUniformLocation(objprogramID, "obj_MVP");
-        // Send our transformation to the currently bound shader,
-        // in the "MVP" uniform
-        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &t_MVP[0][0]);
+        GLuint lightID= glGetUniformLocation(objprogramID, "lightPos");
+        glUniform3fv(lightID, 1, &lightPos[0]);
+        GLuint viewposID = glGetUniformLocation(objprogramID, "viewPos");
+        glUniform3fv(viewposID, 1, &pos[0]);
+        GLuint modelID= glGetUniformLocation(objprogramID, "model");
+        glUniformMatrix4fv(modelID, 1, GL_FALSE, &Model[0][0]);
+        GLuint viewID = glGetUniformLocation(objprogramID, "view");
+        glUniformMatrix4fv(viewID, 1, GL_FALSE, &View[0][0]);
+        GLuint proID = glGetUniformLocation(objprogramID, "projection");
+        glUniformMatrix4fv(proID, 1, GL_FALSE, &Projection[0][0]);
+        //GLuint MatrixID = glGetUniformLocation(objprogramID, "obj_MVP");
+        //// Send our transformation to the currently bound shader,
+        //// in the "MVP" uniform
+        //glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &t_MVP[0][0]);
        // glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
         glBindVertexArray(objVAO);
         glDrawArrays(GL_TRIANGLES, 0, number); // 3 indices starting at 0 -> 1 triangle
