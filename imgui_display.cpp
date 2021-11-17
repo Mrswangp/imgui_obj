@@ -13,34 +13,41 @@
 #include "common/objloader.hpp"
 float deltatime = 0.0f;
 float lastframe = 0.0f;
-float radius = 3.0f;
+float yaw = -90.0f;// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
+float pitch = 0.0f;
+bool firstMouse = true;
+float lastX = 1200 / 2.0;
+float lastY = 800 / 2.0;
+float fov = 45.0f;
  //lighting
 glm::vec3 lightPos(1.2, 1, 1.5);
-//glm::vec3 pos = glm::vec3(radius, 0, radius); // Camera is at (4,3,3), in World Space
-glm::vec3 pos = glm::vec3(0,0, radius); // Camera is at (4,3,3), in World Space
-glm::vec3 lookAtPos = glm::vec3(0, 0, -1);
-glm::vec3 up = glm::vec3(0, 1, 0);
 
+glm::vec3 camerapos = glm::vec3(0,0,3); 
+glm::vec3 camerafront = glm::vec3(0, 0, -1);
+glm::vec3 cameraup = glm::vec3(0, 1, 0);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void window_size_callback(GLFWwindow* window, int width, int height);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     float cameraspeed = 2.5 * deltatime;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        pos += cameraspeed * lookAtPos;
+        camerapos += cameraspeed * camerafront;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        pos -= cameraspeed * lookAtPos;
+        camerapos -= cameraspeed * camerafront;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        pos -= glm::normalize(glm::cross(lookAtPos, up)) * cameraspeed;
+        camerapos += glm::normalize(glm::cross(camerafront, cameraup)) * cameraspeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        pos += glm::normalize(glm::cross(lookAtPos, up)) * cameraspeed;
+        camerapos -= glm::normalize(glm::cross(camerafront, cameraup)) * cameraspeed;
+    camerapos.y = 0.0f;
 }
 int main()
-{
+{   
     // 设置窗口大小
-    const unsigned int Window_width = 1800;
-    const unsigned int Window_height = 1600;
+    const unsigned int Window_width = 1200;
+    const unsigned int Window_height = 800;
     // 实例化GLFW窗口
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -62,6 +69,9 @@ int main()
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, window_size_callback);
+    //glfwSetCursorPosCallback(window, mouse_callback);
+  //  glfwSetScrollCallback(window, scroll_callback);
+ //   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSwapInterval(1);
     //初始化glew
     glewInit();
@@ -75,6 +85,7 @@ int main()
     bool ImGui = true;
     bool show_demo_window = true;
     int isOrthoCamera = 0;
+    int rotateflag = 0;
     float light_vertices[] = {
        -0.5f, -0.5f, -0.5f,
         0.5f, -0.5f, -0.5f,
@@ -134,7 +145,7 @@ int main()
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec2> texture;
     std::vector<glm::vec3> normals; // Won't be used at the moment.
-    auto res =obj::load_obj("resource/cube.obj", vertices, texture, normals);
+    auto res =obj::load_obj("resource/test_new.obj", vertices, texture, normals);
     if (!res) {
         printf("load obj file failed!");
         return -1;
@@ -161,13 +172,15 @@ int main()
     );
     glEnableVertexAttribArray(0);
     // add normal 
-    GLuint normalbuffer;
-    glGenBuffers(1, &normalbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
-  
-    glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,(void *)0);
-    glEnableVertexAttribArray(1);
+    if (normals.size() != 0) {
+        GLuint normalbuffer;
+        glGenBuffers(1, &normalbuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+
+        glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        glEnableVertexAttribArray(1);
+    }
     GLuint lightbuffer, lightVAO;
     glGenVertexArrays(1, &lightVAO);
     glBindVertexArray(lightVAO);
@@ -191,9 +204,11 @@ int main()
     int ShininessValue = 2;
     float transparency =1.0f;
     // 渲染循环
-    const unsigned int SCR_WIDTH = 800;
-    const unsigned int SCR_HEIGHT = 600;
+  //  const unsigned int SCR_WIDTH = 800;
+ //   const unsigned int SCR_HEIGHT = 600;
     const float ZOOM = 45.0f;
+    float stopAngle = 0;
+    float rotateFpara = 0;
     while (!glfwWindowShouldClose(window))
     {
         auto currentframe = glfwGetTime();
@@ -202,12 +217,17 @@ int main()
         processInput(window);
         static int speed_divisor = 1;
         float currentTime = glfwGetTime() * speed_divisor;
+        stopAngle = glm::radians(90.0f);
+        rotateFpara = rotateflag ? (float)currentTime : stopAngle;
         // Projection matrix : 45?Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
         glm::mat4 Projection = isOrthoCamera ? glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 10.0f) : glm::perspective(glm::radians(viewField), 4.0f / 3.0f, 0.1f, 100.0f);
+       // glm::mat4 Projection = glm::perspective(glm::radians(fov), (float)Window_width / (float)Window_height, 0.1f, 100.0f);
         glm::vec3 rotationAxis = glm::vec3(0, 1, 0);
-        glm::mat4 RotationMatrix = glm::rotate((float)currentTime, rotationAxis);
+        /*glm::mat4 RotationMatrix = glm::rotate((float)currentTime, rotationAxis);*/
+        glm::mat4 RotationMatrix = glm::rotate(rotateFpara, rotationAxis);
         // Camera matrix
-        glm::mat4 inial_view = glm::lookAt(pos, pos + lookAtPos, up);
+        glm::mat4 inial_view = glm::lookAt(glm::vec3(camerapos.x,camerapos.y,camerapos.z), camerapos + camerafront, cameraup);
+      //  glm::mat4 View = rotateflag?(inial_view * RotationMatrix * RotationMatrix45): inial_view;
         glm::mat4 View = inial_view * RotationMatrix * RotationMatrix45;
         glm::mat4 Model = glm::mat4(1.0f);
         glm::mat4 t_MVP = Projection * View * Model;
@@ -219,7 +239,10 @@ int main()
         ImGui::RadioButton("perspective camera", &isOrthoCamera, 0);
         ImGui::SameLine();
         ImGui::RadioButton("ortho camera", &isOrthoCamera, 1);
-        ImGui::SliderFloat("speed", &currentTime, 0.0f, 90.0f, "speed = %.3f");
+        ImGui::RadioButton("start rotate", &rotateflag, 1);
+        ImGui::SameLine();
+        ImGui::RadioButton("stop rotate", &rotateflag, 0);
+        //ImGui::SliderFloat("speed", &currentTime, 0.0f, 90.0f, "speed = %.3f");
         if (ImGui::Button("Triple speed")) {
             speed_divisor = 3;
         }
@@ -231,7 +254,9 @@ int main()
         if (ImGui::Button("Sevenfold speed")) {
             speed_divisor = 7;
         }
-       
+        //ImGui::SliderFloat("x",&camerapos.x,-15.0f,15.0f,"campos.x=%0.3f");
+        ImGui::SliderFloat("Direction of light", &camerapos.y, -15.0f, 15.0f, "campos.y=%0.3f");
+       // ImGui::SliderFloat("z", &camerapos.z, -15.0f, 15.0f, "campos.z=%0.3f");
         ImGui::SliderFloat("viewField", &viewField, 0.0f, 90.0f, "viewField = %.3f");
          ImGui::SliderInt("Shininess", &ShininessValue, 2, 256);
        // ImGui::SliderFloat("radius", &radius, 0.0f, 20.0f, "radius = %.3f");
@@ -273,7 +298,7 @@ int main()
         GLuint lightID= glGetUniformLocation(objprogramID, "lightPos");
         glUniform3fv(lightID, 1, &lightPos[0]);
         GLuint viewposID = glGetUniformLocation(objprogramID, "viewPos");
-        glUniform3fv(viewposID, 1, &pos[0]);
+        glUniform3fv(viewposID, 1, &camerapos[0]);
         GLuint modelID= glGetUniformLocation(objprogramID, "model");
         glUniformMatrix4fv(modelID, 1, GL_FALSE, &Model[0][0]);
         GLuint viewID = glGetUniformLocation(objprogramID, "view");
@@ -304,6 +329,8 @@ int main()
     ImGui_ImplGlfwGL3_Shutdown();
     ImGui::DestroyContext();
 
+
+
     // 清除所有申请的glfw资源
     glfwTerminate();
     return 0;
@@ -312,4 +339,41 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
-
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;  // reversed since y-coordinates go from bottom to top
+    lastX = xpos;
+    lastY = ypos;
+    float sensitivity = 0.1f; //change this value to your liking
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+    yaw += xoffset;
+    pitch += yoffset;
+    //make sure that when pitch is out of bounds,screen doesn't get flipped
+    if (pitch > 89.0f)
+        pitch = 89.0f;
+    if (pitch < -89.0f)
+        pitch = -89.0f;
+    glm::vec3 front;
+    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    front.y = sin(glm::radians(pitch));
+    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    camerafront = glm::normalize(front);
+}
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    fov -= (float)yoffset;
+    if (fov < 1.0f) {
+        fov = 1.0f;
+    }
+    if (fov > 45.0f) {
+        fov = 45.0f;
+    }
+}
