@@ -13,12 +13,13 @@
 #include "common/objloader.hpp"
 float deltatime = 0.0f;
 float lastframe = 0.0f;
-float yaw = -90.0f;// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
+float yaw = 0.0f;// -90.0f;// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
 float pitch = 0.0f;
 bool firstMouse = true;
 float lastX = 1200 / 2.0;
 float lastY = 800 / 2.0;
 float fov = 45.0f;
+bool mousestate = false;
  //lighting
 glm::vec3 lightPos(1.2, 1, 1.5);
 
@@ -28,59 +29,15 @@ glm::vec3 cameraup = glm::vec3(0, 1, 0);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void window_size_callback(GLFWwindow* window, int width, int height);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void processInput(GLFWwindow* window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-    float cameraspeed = 2.5 * deltatime;
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camerapos += cameraspeed * camerafront;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camerapos -= cameraspeed * camerafront;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camerapos += glm::normalize(glm::cross(camerafront, cameraup)) * cameraspeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camerapos -= glm::normalize(glm::cross(camerafront, cameraup)) * cameraspeed;
-    camerapos.y = 0.0f;
-}
+void delete_resource(GLuint vertexbuffer, GLuint lightbuffer, GLuint objVAO, GLuint lightVAO, GLuint objprogramID, GLuint lightprogramID);
+void processInput(GLFWwindow* window);
+GLFWwindow* init_environment();
 int main()
 {   
-    // 设置窗口大小
-    const unsigned int Window_width = 1200;
-    const unsigned int Window_height = 800;
-    // 实例化GLFW窗口
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    //下面这条语句是为了适应苹果系统
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-    // 创建一个窗口对象，这个窗口对象存放了所有和窗口相关的数据，而且会被GLFW的其他函数频繁地用到。
-    // 此外增加 if (window == NULL) 判断窗口是否创建成功
-    GLFWwindow* window = glfwCreateWindow(Window_width, Window_height, "ImGui Triangle", NULL, NULL);
-    if (window == NULL)
-    {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
+    GLFWwindow* window = init_environment();
+    if (!window) {
         return -1;
     }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, window_size_callback);
-    //glfwSetCursorPosCallback(window, mouse_callback);
-  //  glfwSetScrollCallback(window, scroll_callback);
- //   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSwapInterval(1);
-    //初始化glew
-    glewInit();
-    //创建并绑定ImGui
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    (void)io;
-    ImGui_ImplGlfwGL3_Init(window, true);
-    ImGui::StyleColorsDark();
     //初始化各种数据
     bool ImGui = true;
     bool show_demo_window = true;
@@ -199,6 +156,9 @@ int main()
     glEnableVertexAttribArray(0);
     //glm::mat4 RotationMatrix45 = glm::rotate((float)3.14f / 4, glm::vec3(0, 1, 0));
     glm::mat4 RotationMatrix45 = glm::rotate(glm::radians(45.0f), glm::vec3(0, 1, 0));
+   /* glm::mat4 RotationMatrix_pitch = glm::rotate(glm::radians(pitch), glm::vec3(0, 1, 0));
+    glm::mat4 RotationMatrix_yaw = glm::rotate(glm::radians(yaw), glm::vec3(1, 0, 0));
+    glm::mat4 rotationcombine = RotationMatrix_pitch * RotationMatrix_yaw;*/
     glm::vec3 objectColor = glm::vec3(0, 1, 0);
     glm::vec3 lightColor = glm::vec3(1, 1, 1);
     int ShininessValue = 2;
@@ -210,7 +170,8 @@ int main()
     float stopAngle = 0;
     float rotateFpara = 0;
     while (!glfwWindowShouldClose(window))
-    {
+    {   
+        
         auto currentframe = glfwGetTime();
         deltatime = currentframe - lastframe;
         lastframe = currentframe;
@@ -229,6 +190,7 @@ int main()
         glm::mat4 inial_view = glm::lookAt(glm::vec3(camerapos.x,camerapos.y,camerapos.z), camerapos + camerafront, cameraup);
       //  glm::mat4 View = rotateflag?(inial_view * RotationMatrix * RotationMatrix45): inial_view;
         glm::mat4 View = inial_view * RotationMatrix * RotationMatrix45;
+        //glm::mat4 View = inial_view * RotationMatrix * rotationcombine;
         glm::mat4 Model = glm::mat4(1.0f);
         glm::mat4 t_MVP = Projection * View * Model;
       //   创建ImGui
@@ -285,7 +247,8 @@ int main()
         glm::mat4 lamp_model = glm::mat4(1.0f);
         lamp_model = glm::translate(lamp_model, lightPos);
         lamp_model = glm::scale(lamp_model, glm::vec3(0.1f)); // a smaller cube
-        glm::mat4 l_MVP = Projection * inial_view * lamp_model;
+        glm::mat4 lamp_Projection = isOrthoCamera ? glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 10.0f) : glm::perspective(glm::radians(90.0f), 4.0f / 3.0f, 0.1f, 100.0f);
+        glm::mat4 l_MVP = lamp_Projection * glm::lookAt(glm::vec3(0,0,3), glm::vec3(0, 0, 3) +glm::vec3(0,0,-1), glm::vec3(0,1,0)) * lamp_model;
         GLuint lampID = glGetUniformLocation(lightprogramID, "lamp_MVP");
         glUniformMatrix4fv(lampID, 1, GL_FALSE, &l_MVP[0][0]);
         glBindVertexArray(lightVAO);
@@ -318,6 +281,11 @@ int main()
         glfwPollEvents();
     }
 
+    delete_resource(vertexbuffer, lightbuffer, objVAO, lightVAO, objprogramID, lightprogramID);
+    return 0;
+}
+void delete_resource(GLuint vertexbuffer, GLuint lightbuffer, GLuint objVAO, GLuint lightVAO, GLuint objprogramID, GLuint lightprogramID)
+{
     // 释放VAO、VBO、EBO资源
     glDeleteBuffers(1, &vertexbuffer);
     glDeleteBuffers(1, &lightbuffer);
@@ -328,12 +296,8 @@ int main()
     // 释放ImGui资源
     ImGui_ImplGlfwGL3_Shutdown();
     ImGui::DestroyContext();
-
-
-
     // 清除所有申请的glfw资源
     glfwTerminate();
-    return 0;
 }
 void window_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -347,25 +311,38 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
         lastY = ypos;
         firstMouse = false;
     }
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;  // reversed since y-coordinates go from bottom to top
-    lastX = xpos;
-    lastY = ypos;
-    float sensitivity = 0.1f; //change this value to your liking
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
-    yaw += xoffset;
-    pitch += yoffset;
+   if(mousestate){
+        float xoffset = xpos - lastX;
+        float yoffset = lastY - ypos;  // reversed since y-coordinates go from bottom to top
+        lastX = xpos;
+        lastY = ypos;
+        float sensitivity = 0.1f; //change this value to your liking
+        xoffset *= sensitivity;
+        yoffset *= sensitivity;
+        yaw += xoffset;
+        pitch += yoffset;
+        if (pitch > 89.0f)
+            pitch = 89.0f;
+        if (pitch < -89.0f)
+            pitch = -89.0f;
+        glm::vec3 front;
+        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+        front.y = sin(glm::radians(pitch));
+        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+        camerafront = glm::normalize(front);
+        //float cameraspeed = 2.5 * deltatime;
+        //if(xoffset>0)
+        //     camerapos -= glm::normalize(glm::cross(camerafront, cameraup)) * cameraspeed;
+        //else if(xoffset<=0)
+        //    camerapos += glm::normalize(glm::cross(camerafront, cameraup)) * cameraspeed;
+        //if (yoffset > 0)
+        //    camerapos += glm::normalize(glm::cross(camerafront, glm::normalize(glm::cross(camerafront, cameraup)))) * cameraspeed;
+        //else if(yoffset<=0)
+        //    camerapos -= glm::normalize(glm::cross(camerafront, glm::normalize(glm::cross(camerafront, cameraup)))) * cameraspeed;
+    }
     //make sure that when pitch is out of bounds,screen doesn't get flipped
-    if (pitch > 89.0f)
-        pitch = 89.0f;
-    if (pitch < -89.0f)
-        pitch = -89.0f;
-    glm::vec3 front;
-    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    front.y = sin(glm::radians(pitch));
-    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    camerafront = glm::normalize(front);
+   
+   
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
@@ -376,4 +353,64 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     if (fov > 45.0f) {
         fov = 45.0f;
     }
+}
+GLFWwindow* init_environment()
+{   
+    // 设置窗口大小
+    const unsigned int Window_width = 1200;
+    const unsigned int Window_height = 800;
+    // 实例化GLFW窗口
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    //下面这条语句是为了适应苹果系统
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+    // 创建一个窗口对象，这个窗口对象存放了所有和窗口相关的数据，而且会被GLFW的其他函数频繁地用到。
+    // 此外增加 if (window == NULL) 判断窗口是否创建成功
+    GLFWwindow* window = glfwCreateWindow(Window_width, Window_height, "ImGui Triangle", NULL, NULL);
+    if (window == NULL)
+    {
+        std::cout << "Failed to create GLFW window" << std::endl;
+        glfwTerminate();
+        return nullptr;
+    }
+    glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, window_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    //  glfwSetScrollCallback(window, scroll_callback);
+   //   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSwapInterval(1);
+    //初始化glew
+    glewInit();
+    //创建并绑定ImGui
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+    ImGui_ImplGlfwGL3_Init(window, true);
+    ImGui::StyleColorsDark();
+    return window;
+}
+void processInput(GLFWwindow* window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+    float cameraspeed = 2.5 * deltatime;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camerapos += cameraspeed * camerafront;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camerapos -= cameraspeed * camerafront;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camerapos += glm::normalize(glm::cross(camerafront, cameraup)) * cameraspeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camerapos -= glm::normalize(glm::cross(camerafront, cameraup)) * cameraspeed;
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+        mousestate = true;
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
+        mousestate = false;
+    camerapos.y = 0.0f;
+
 }

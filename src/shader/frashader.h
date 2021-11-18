@@ -17,7 +17,7 @@ namespace shader
 		"void main()\n" 
 	    "{\n"
 		"//ambient\n"
-		"float ambientStrength=0.1;\n"
+		"float ambientStrength=0.5;\n"
 		"vec3 ambient = ambientStrength * lightColor;\n"
 		"//diffuse\n"
 		"vec3 norm = normalize(Normal);\n"
