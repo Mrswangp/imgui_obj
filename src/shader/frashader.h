@@ -13,7 +13,8 @@ namespace shader
 		"uniform vec3 lightColor;\n"
 		"uniform vec3 lightPos;\n"
 		"uniform vec3 viewPos;\n"
-		"uniform int Shininess;"
+		"uniform int Shininess;\n"
+		"uniform float alpha;\n"
 		"void main()\n" 
 	    "{\n"
 		"//ambient\n"
@@ -31,7 +32,11 @@ namespace shader
 		"float spec = pow(max(dot(viewDir,reflectDir),0.0), Shininess);\n"
 		"vec3 specular = specularStrength * spec *lightColor;\n"
 		"vec3 result = (ambient+diffuse+specular)*objectColor;\n"
-		"color =vec4(result,1.0);\n"
+		"vec4 m_color =vec4(result,alpha);\n"
+		"if(m_color.a<0.1)\n"
+		"discard;\n"
+		"color=m_color;\n"
+		"//color =texture(result,alpha);\n"
 		"//color = vec4(lightColor*objectColor);\n"
 		"}\n\0";
 }

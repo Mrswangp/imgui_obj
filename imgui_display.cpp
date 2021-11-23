@@ -1,7 +1,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw_gl3.h"
 #include <stdio.h>
-#include <GL/glew.h> //  使用gl3w，glad也行，注意要在项目工程中添加gl3w.c（或者glad.c/使用glad）
+#include <GL/glew.h> //  Use gl3w or glad. Note that gl3w. C (or glad. C / use glad) should be added to the project project
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include "common/shader.hpp"
@@ -20,7 +20,8 @@ float lastX = 1200 / 2.0;
 float lastY = 800 / 2.0;
 float fov = 45.0f;
 bool mousestate = false;
- //lighting
+
+ //lighting position
 glm::vec3 lightPos(1.2, 1, 1.5);
 
 glm::vec3 camerapos = glm::vec3(0,0,3); 
@@ -38,7 +39,7 @@ int main()
     if (!window) {
         return -1;
     }
-    //初始化各种数据
+    //Initialize various data
     bool ImGui = true;
     bool show_demo_window = true;
     int isOrthoCamera = 0;
@@ -86,15 +87,16 @@ int main()
        -0.5f,  0.5f,  0.5f,
        -0.5f,  0.5f, -0.5f,
     };
-    // 开启深度测试
+
+    // Opening depth test
     glEnable(GL_DEPTH_TEST);
     // Accept fragment if it closer to the camera than the former one
     glDepthFunc(GL_LESS);
-
-    // 加载shader文件，创建并编译GLSL程序
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+    // Load the shader file, create and compile the glsl program
     GLuint objprogramID = LoadShaders(BASIC_FLAG);
     GLuint lightprogramID = LoadShaders(LAMP_FLAG);
-  //  ImVec4 camPos = ImVec4(radius, 0.0f, radius, 1.00f);
     float viewField = 90.0f;
   
   //   Read our .obj file
@@ -110,12 +112,14 @@ int main()
     static int number = vertices.size();
     std::cout << "vertex_indices number is: \n" << number << std::endl;
     printf("load obj file successfully!");
-   // 定义顶点缓冲，并将顶点缓冲传给OpenGL
+
+    // Define vertex buffer and pass vertex buffer to OpenGL
     GLuint objVAO,vertexbuffer;
     glGenVertexArrays(1, &objVAO);
     glBindVertexArray(objVAO);
     glGenBuffers(1, &vertexbuffer);
-    // 把我们的顶点数组复制到一个顶点缓冲中，供OpenGL使用
+
+    //Copy our vertex array to a vertex buffer for OpenGL
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     // glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
@@ -162,10 +166,9 @@ int main()
     glm::vec3 objectColor = glm::vec3(0, 1, 0);
     glm::vec3 lightColor = glm::vec3(1, 1, 1);
     int ShininessValue = 2;
-    float transparency =1.0f;
-    // 渲染循环
-  //  const unsigned int SCR_WIDTH = 800;
- //   const unsigned int SCR_HEIGHT = 600;
+    float transparency =0.0f;
+
+    // Render Loop
     const float ZOOM = 45.0f;
     float stopAngle = 0;
     float rotateFpara = 0;
@@ -193,18 +196,16 @@ int main()
         //glm::mat4 View = inial_view * RotationMatrix * rotationcombine;
         glm::mat4 Model = glm::mat4(1.0f);
         glm::mat4 t_MVP = Projection * View * Model;
-      //   创建ImGui
-        
+     
+        // create ImGui interface
         ImGui_ImplGlfwGL3_NewFrame();
         ImGui::Begin("Panel", &ImGui, ImGuiWindowFlags_MenuBar);
-        
         ImGui::RadioButton("perspective camera", &isOrthoCamera, 0);
         ImGui::SameLine();
         ImGui::RadioButton("ortho camera", &isOrthoCamera, 1);
         ImGui::RadioButton("start rotate", &rotateflag, 1);
         ImGui::SameLine();
         ImGui::RadioButton("stop rotate", &rotateflag, 0);
-        //ImGui::SliderFloat("speed", &currentTime, 0.0f, 90.0f, "speed = %.3f");
         if (ImGui::Button("Triple speed")) {
             speed_divisor = 3;
         }
@@ -224,7 +225,9 @@ int main()
        // ImGui::SliderFloat("radius", &radius, 0.0f, 20.0f, "radius = %.3f");
         ImGui::ColorEdit3("object color", (float*)&objectColor);
         ImGui::ColorEdit3("light color", (float*)&lightColor);
-       // ImGui::SliderFloat("transparency", (float*)&transparency, 0.0f, 20.0f, "transparency = %.3f");
+        ImGui::SliderFloat("transparency", (float*)&transparency, 0.0f, 1.0f, "transparency = %.3f");
+        //glUniform3fv(glGetUniformLocation(objprogramID, "objectColor"), 1, &objectColor[0]);
+        glUniform1f(glGetUniformLocation(objprogramID, "alpha"), transparency);
         glUniform3fv(glGetUniformLocation(objprogramID,"objectColor"),1, &objectColor[0]);
         glUniform3fv(glGetUniformLocation(objprogramID, "lightColor"), 1, &lightColor[0]);
         ImGui::End();
@@ -234,7 +237,8 @@ int main()
         //    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver); // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
         //    ImGui::ShowDemoWindow(&show_demo_window);
         //}
-        // 渲染窗口颜色
+        
+        // render window color
         int view_width, view_height;
         glfwGetFramebufferSize(window, &view_width, &view_height);
         glViewport(0, 0, view_width, view_height);
@@ -242,6 +246,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         ImGui::Render();
         ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+
         //render light     /*****************-> error:  different render order cause bad results
         glUseProgram(lightprogramID);
         glm::mat4 lamp_model = glm::mat4(1.0f);
@@ -253,10 +258,12 @@ int main()
         glUniformMatrix4fv(lampID, 1, GL_FALSE, &l_MVP[0][0]);
         glBindVertexArray(lightVAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+
         //render obj
         glUseProgram(objprogramID);
         GLuint ShininessID = glGetUniformLocation(objprogramID,"Shininess");
         glUniform1i(ShininessID, ShininessValue);
+
         // Get a handle for our "MVP" uniform
         GLuint lightID= glGetUniformLocation(objprogramID, "lightPos");
         glUniform3fv(lightID, 1, &lightPos[0]);
@@ -276,7 +283,7 @@ int main()
         glBindVertexArray(objVAO);
         glDrawArrays(GL_TRIANGLES, 0, number); // 3 indices starting at 0 -> 1 triangle
       
-        // 双缓冲。前缓冲保存着最终输出的图像，它会在屏幕上显示；而所有的的渲染指令都会在后缓冲上绘制。
+        // Double buffering. The front buffer holds the final output image, which will be displayed on the screen; All rendering instructions are drawn on the post buffer.
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -286,17 +293,19 @@ int main()
 }
 void delete_resource(GLuint vertexbuffer, GLuint lightbuffer, GLuint objVAO, GLuint lightVAO, GLuint objprogramID, GLuint lightprogramID)
 {
-    // 释放VAO、VBO、EBO资源
+    // release VAO、VBO、EBO resource
     glDeleteBuffers(1, &vertexbuffer);
     glDeleteBuffers(1, &lightbuffer);
     glDeleteVertexArrays(1, &objVAO);
     glDeleteVertexArrays(1, &lightVAO);
     glDeleteProgram(objprogramID);
     glDeleteProgram(lightprogramID);
-    // 释放ImGui资源
+
+    // release ImGui resource
     ImGui_ImplGlfwGL3_Shutdown();
     ImGui::DestroyContext();
-    // 清除所有申请的glfw资源
+
+    // Clear all requested glfw resources
     glfwTerminate();
 }
 void window_size_callback(GLFWwindow* window, int width, int height)
@@ -321,6 +330,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
         yoffset *= sensitivity;
         yaw += xoffset;
         pitch += yoffset;
+
+        //make sure that when pitch is out of bounds,screen doesn't get flipped
         if (pitch > 89.0f)
             pitch = 89.0f;
         if (pitch < -89.0f)
@@ -330,19 +341,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
         front.y = sin(glm::radians(pitch));
         front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
         camerafront = glm::normalize(front);
-        //float cameraspeed = 2.5 * deltatime;
-        //if(xoffset>0)
-        //     camerapos -= glm::normalize(glm::cross(camerafront, cameraup)) * cameraspeed;
-        //else if(xoffset<=0)
-        //    camerapos += glm::normalize(glm::cross(camerafront, cameraup)) * cameraspeed;
-        //if (yoffset > 0)
-        //    camerapos += glm::normalize(glm::cross(camerafront, glm::normalize(glm::cross(camerafront, cameraup)))) * cameraspeed;
-        //else if(yoffset<=0)
-        //    camerapos -= glm::normalize(glm::cross(camerafront, glm::normalize(glm::cross(camerafront, cameraup)))) * cameraspeed;
     }
-    //make sure that when pitch is out of bounds,screen doesn't get flipped
-   
-   
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
@@ -356,21 +355,23 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 }
 GLFWwindow* init_environment()
 {   
-    // 设置窗口大小
+    // Set window size
     const unsigned int Window_width = 1200;
     const unsigned int Window_height = 800;
-    // 实例化GLFW窗口
+    
+    // Instantiate glfw window
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    //下面这条语句是为了适应苹果系统
+    
+    //to adapt macos
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    // 创建一个窗口对象，这个窗口对象存放了所有和窗口相关的数据，而且会被GLFW的其他函数频繁地用到。
-    // 此外增加 if (window == NULL) 判断窗口是否创建成功
+    // Create a window object that stores all window related data and is frequently used by other functions of glfw。
+    // In addition, if (window = = null) is added to judge whether the window is created successfully
     GLFWwindow* window = glfwCreateWindow(Window_width, Window_height, "ImGui Triangle", NULL, NULL);
     if (window == NULL)
     {
@@ -384,9 +385,11 @@ GLFWwindow* init_environment()
     //  glfwSetScrollCallback(window, scroll_callback);
    //   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSwapInterval(1);
-    //初始化glew
+    
+    //init glew
     glewInit();
-    //创建并绑定ImGui
+   
+    //create and bind ImGui
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     (void)io;
@@ -407,9 +410,9 @@ void processInput(GLFWwindow* window)
         camerapos += glm::normalize(glm::cross(camerafront, cameraup)) * cameraspeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camerapos -= glm::normalize(glm::cross(camerafront, cameraup)) * cameraspeed;
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
         mousestate = true;
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE)
         mousestate = false;
     camerapos.y = 0.0f;
 
