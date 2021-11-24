@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include<time.h>
 #include <glm/glm.hpp>
 namespace obj {
 	struct objdata {

@@ -3,12 +3,14 @@
 #include <stdio.h>
 #include <GL/glew.h> //  Use gl3w or glad. Note that gl3w. C (or glad. C / use glad) should be added to the project project
 #include <GLFW/glfw3.h>
-#include <iostream>
-#include "common/shader.hpp"
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
+#include<librealsense2/rs.hpp>
+#include<thread>
+#include <iostream>
+#include "common/shader.hpp"
 #include "common/texture.hpp"
 #include "common/objloader.hpp"
 float deltatime = 0.0f;
@@ -32,6 +34,7 @@ void window_size_callback(GLFWwindow* window, int width, int height);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void delete_resource(GLuint vertexbuffer, GLuint lightbuffer, GLuint objVAO, GLuint lightVAO, GLuint objprogramID, GLuint lightprogramID);
 void processInput(GLFWwindow* window);
+int realsense();
 GLFWwindow* init_environment();
 int main()
 {   
@@ -104,14 +107,14 @@ int main()
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec2> texture;
     std::vector<glm::vec3> normals; // Won't be used at the moment.
-    auto res =obj::load_obj("resource/test_new.obj", vertices, texture, normals);
+    auto res =obj::load_obj("resource/cube.obj", vertices, texture, normals);
     if (!res) {
         printf("load obj file failed!");
         return -1;
     }
     static int number = vertices.size();
     std::cout << "vertex_indices number is: \n" << number << std::endl;
-    printf("load obj file successfully!");
+    printf("load obj file successfully!\n");
 
     // Define vertex buffer and pass vertex buffer to OpenGL
     GLuint objVAO,vertexbuffer;
@@ -166,12 +169,41 @@ int main()
     glm::vec3 objectColor = glm::vec3(0, 1, 0);
     glm::vec3 lightColor = glm::vec3(1, 1, 1);
     int ShininessValue = 2;
-    float transparency =0.0f;
+    float transparency =0.5f;
 
     // Render Loop
     const float ZOOM = 45.0f;
     float stopAngle = 0;
     float rotateFpara = 0;
+    const char* text = "Distance: ";
+    float dis_to_center = 0;
+    //realsense operation
+    auto realsense_sample = [&]()
+     {   
+            try {
+                rs2::pipeline pip;
+                pip.start();
+                while (true)
+                {
+                    rs2::frameset frames = pip.wait_for_frames();
+                    rs2::depth_frame depth = frames.get_depth_frame();
+                    auto width = depth.get_width();
+                    auto height = depth.get_height();
+                    dis_to_center = depth.get_distance(width / 2, height / 2);
+                    std::cout << "the camera is facing an object " << dis_to_center << "meters away \r";
+                }
+                return EXIT_SUCCESS;
+            }
+            catch (const rs2::error& e) {
+                std::cerr << "RealSense error calling" << e.get_failed_function() << "(" << e.get_failed_args() << "):\n" << e.what() << std::endl;
+                return EXIT_FAILURE;
+            }
+            catch (const std::exception& e)
+            {
+                std::cerr << e.what() << std::endl;
+                return EXIT_FAILURE;
+            }
+     };
     while (!glfwWindowShouldClose(window))
     {   
         
@@ -226,17 +258,23 @@ int main()
         ImGui::ColorEdit3("object color", (float*)&objectColor);
         ImGui::ColorEdit3("light color", (float*)&lightColor);
         ImGui::SliderFloat("transparency", (float*)&transparency, 0.0f, 1.0f, "transparency = %.3f");
+        if (ImGui::Button("test distance with realsense sdk")) {
+            std::thread start_realsense(realsense_sample);
+            start_realsense.detach();
+        }
+        ImGui::Text("camera to object distance : %f ", dis_to_center);
+        //ImGui::LabelText(text,text);
         //glUniform3fv(glGetUniformLocation(objprogramID, "objectColor"), 1, &objectColor[0]);
         glUniform1f(glGetUniformLocation(objprogramID, "alpha"), transparency);
         glUniform3fv(glGetUniformLocation(objprogramID,"objectColor"),1, &objectColor[0]);
         glUniform3fv(glGetUniformLocation(objprogramID, "lightColor"), 1, &lightColor[0]);
         ImGui::End();
 
-        //if (show_demo_window)
-        //{
-        //    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver); // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
-        //    ImGui::ShowDemoWindow(&show_demo_window);
-        //}
+        if (show_demo_window)
+        {
+            ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver); // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
+            ImGui::ShowDemoWindow(&show_demo_window);
+        }
         
         // render window color
         int view_width, view_height;
@@ -416,4 +454,29 @@ void processInput(GLFWwindow* window)
         mousestate = false;
     camerapos.y = 0.0f;
 
+}
+int realsense() try
+{
+    
+        rs2::pipeline pip;
+        pip.start();
+        while (true)
+        {
+            rs2::frameset frames = pip.wait_for_frames();
+            rs2::depth_frame depth = frames.get_depth_frame();
+            auto width = depth.get_width();
+            auto height = depth.get_height();
+            float dis_to_center = depth.get_distance(width / 2, height / 2);
+            std::cout << "the camera is facing an object " << dis_to_center << "meters away \r";
+        }
+        return EXIT_SUCCESS;
+}
+catch (const rs2::error& e) {
+    std::cerr << "RealSense error calling" << e.get_failed_function() << "(" << e.get_failed_args() << "):\n" << e.what() << std::endl;
+    return EXIT_FAILURE;
+}
+catch (const std::exception& e)
+{
+    std::cerr << e.what() << std::endl;
+    return EXIT_FAILURE;
 }

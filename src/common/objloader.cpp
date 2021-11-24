@@ -1,6 +1,7 @@
 
 #include "objloader.hpp"
 using namespace obj;
+using namespace std;
 bool extract_infor(obj::objdata obj_tar,std::vector<unsigned int> vertexIndices, 
 	std::vector<unsigned int>  uvIndices, 
 	std::vector<unsigned int> normalIndices, 
@@ -14,35 +15,35 @@ bool extract_infor(obj::objdata obj_tar,std::vector<unsigned int> vertexIndices,
 	if (obj_tar.v_flag && obj_tar.vt_flag && obj_tar.vn_flag) {
 		// For each vertex of each triangle
 		for (unsigned int i = 0; i < vertexIndices.size(); i++) {
+			//for (auto &i: vertexIndices) {
+				// Get the indices of its attributes
+				unsigned int vertexIndex = vertexIndices[i];
+				unsigned int uvIndex = uvIndices[i];
+				unsigned int normalIndex = normalIndices[i];
 
-			// Get the indices of its attributes
-			unsigned int vertexIndex = vertexIndices[i];
-			unsigned int uvIndex = uvIndices[i];
-			unsigned int normalIndex = normalIndices[i];
+				// Get the attributes thanks to the index
+				glm::vec3 vertex = temp_vertices[vertexIndex - 1];
+				glm::vec2 uv = temp_uvs[uvIndex - 1];
+				glm::vec3 normal = temp_normals[normalIndex - 1];
 
-			// Get the attributes thanks to the index
-			glm::vec3 vertex = temp_vertices[vertexIndex - 1];
-			glm::vec2 uv = temp_uvs[uvIndex - 1];
-			glm::vec3 normal = temp_normals[normalIndex - 1];
-
-			// Put the attributes in buffers
-			out_vertices.push_back(vertex);
-			out_uvs.push_back(uv);
-			out_normals.push_back(normal);
-
+				// Put the attributes in buffers
+				out_vertices.push_back(vertex);
+				out_uvs.push_back(uv);
+				out_normals.push_back(normal);
+			//}
 		}
 	}
 	else {
-		for (unsigned int i = 0; i < vertexIndices.size(); i++) {
-
+	    for (unsigned int i = 0; i < vertexIndices.size(); i++) {
+		//for (auto &i : vertexIndices) {
 			// Get the indices of its attributes
 			unsigned int vertexIndex = vertexIndices[i];
 			// Get the attributes thanks to the index
 			glm::vec3 vertex = temp_vertices[vertexIndex - 1];
 			// Put the attributes in buffers
 			out_vertices.push_back(vertex);
-
 		}
+		//}
 	}
 	return true;
 }
@@ -95,18 +96,25 @@ bool obj::load_obj(const char* path,
 	std::vector<glm::vec3> temp_vertices;
 	std::vector<glm::vec2> temp_uvs;
 	std::vector<glm::vec3> temp_normals;
+	obj::objdata obj_tar;
+	obj_tar.v_flag = false;
+	obj_tar.vt_flag = false;
+	obj_tar.vn_flag = false;
 	//obj::objloader obj_tar(false, false, false);
-
+	//ifstream ifs;
+	//ifs.open(path, ios::in);
+	//if (!ifs.is_open()) {
+	//	cout << "read fail..." << endl;
+	//	return false;
+	//}
 	FILE* file = fopen(path, "r");
 	if (file == NULL) {
 		printf("Impossible to open the file ! Are you in the right path ? See Tutorial 1 for details\n");
 		getchar();
 		return false;
 	}
-	obj::objdata obj_tar;
-	obj_tar.v_flag = false;
-	obj_tar.vt_flag = false;
-	obj_tar.vn_flag = false;
+	clock_t start, end1,end2;
+	start = clock();
 	while (1) {
 
 		char lineHeader[2000];
@@ -144,7 +152,11 @@ bool obj::load_obj(const char* path,
 			fgets(stupidBuffer, 1000, file);
 		}
 	}
+	end1 = clock();
+	std::cout << "read obj data from file  spend time -> " << (double)(end1 - start) / CLOCKS_PER_SEC << std::endl;
 	extract_infor(obj_tar,vertexIndices,uvIndices,normalIndices,temp_vertices,temp_uvs,temp_normals, out_vertices, out_uvs, out_normals);
+	end2 = clock();
+	std::cout << "data classification time -> " << (double)(end2 - end1) / CLOCKS_PER_SEC << std::endl;
 	fclose(file);
 	return true;
 }
