@@ -161,6 +161,9 @@
     <ClInclude Include="src\shader\lamp_versha.h" />
     <ClInclude Include="src\shader\vershader.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="src\light_vertex.inc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

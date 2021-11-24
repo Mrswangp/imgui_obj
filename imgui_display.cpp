@@ -48,55 +48,17 @@ int main()
     int isOrthoCamera = 0;
     int rotateflag = 0;
     float light_vertices[] = {
-       -0.5f, -0.5f, -0.5f,
-        0.5f, -0.5f, -0.5f,
-        0.5f,  0.5f, -0.5f,
-        0.5f,  0.5f, -0.5f,
-       -0.5f,  0.5f, -0.5f,
-       -0.5f, -0.5f, -0.5f,
-
-       -0.5f, -0.5f,  0.5f,
-        0.5f, -0.5f,  0.5f,
-        0.5f,  0.5f,  0.5f,
-        0.5f,  0.5f,  0.5f,
-       -0.5f,  0.5f,  0.5f,
-       -0.5f, -0.5f,  0.5f,
-
-       -0.5f,  0.5f,  0.5f,
-       -0.5f,  0.5f, -0.5f,
-       -0.5f, -0.5f, -0.5f,
-       -0.5f, -0.5f, -0.5f,
-       -0.5f, -0.5f,  0.5f,
-       -0.5f,  0.5f,  0.5f,
-
-        0.5f,  0.5f,  0.5f,
-        0.5f,  0.5f, -0.5f,
-        0.5f, -0.5f, -0.5f,
-        0.5f, -0.5f, -0.5f,
-        0.5f, -0.5f,  0.5f,
-        0.5f,  0.5f,  0.5f,
-
-       -0.5f, -0.5f, -0.5f,
-        0.5f, -0.5f, -0.5f,
-        0.5f, -0.5f,  0.5f,
-        0.5f, -0.5f,  0.5f,
-       -0.5f, -0.5f,  0.5f,
-       -0.5f, -0.5f, -0.5f,
-
-       -0.5f,  0.5f, -0.5f,
-        0.5f,  0.5f, -0.5f,
-        0.5f,  0.5f,  0.5f,
-        0.5f,  0.5f,  0.5f,
-       -0.5f,  0.5f,  0.5f,
-       -0.5f,  0.5f, -0.5f,
+    #include"light_vertex.inc"
     };
 
     // Opening depth test
     glEnable(GL_DEPTH_TEST);
+
     // Accept fragment if it closer to the camera than the former one
     glDepthFunc(GL_LESS);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+
     // Load the shader file, create and compile the glsl program
     GLuint objprogramID = LoadShaders(BASIC_FLAG);
     GLuint lightprogramID = LoadShaders(LAMP_FLAG);
