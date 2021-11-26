@@ -78,7 +78,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>G:\imgui_demo2 - Copy\imgui_display\src\thirdparty\imgui\examples\libs\glfw\include;G:\imgui_demo2 - Copy\imgui_display\src\thirdparty\imgui\examples\libs\gl3w;src\shader;src\thirdparty\imgui;src;src\thirdparty\glm-0.9.7.1\glm;src\thirdparty\glfw-3.3.5.bin.WIN64\glfw-3.3.5.bin.WIN64\include;src\thirdparty\glew-2.2.0-win32\glew-2.2.0\include;$(IncludePath)</IncludePath>
+    <IncludePath>G:\imgui_demo2 - Copy\imgui_display\src\common;G:\imgui_demo2 - Copy\imgui_display\src\thirdparty\imgui\examples\libs\glfw\include;G:\imgui_demo2 - Copy\imgui_display\src\thirdparty\imgui\examples\libs\gl3w;src\shader;src\thirdparty\imgui;src;src\thirdparty\glm-0.9.7.1\glm;src\thirdparty\glfw-3.3.5.bin.WIN64\glfw-3.3.5.bin.WIN64\include;src\thirdparty\glew-2.2.0-win32\glew-2.2.0\include;$(IncludePath)</IncludePath>
     <LibraryPath>G:\imgui_demo2 - Copy\imgui_display\src\thirdparty\imgui\examples\libs\gl3w\GL;G:\imgui_demo2 - Copy\imgui_display\src\thirdparty\imgui\examples\libs\glfw\lib-vc2019;src\thirdparty\glew-2.2.0-win32\glew-2.2.0\lib\Release\x64;src\thirdparty\glfw-3.3.5.bin.WIN64\glfw-3.3.5.bin.WIN64\lib-vc2019;$(LibraryPath)</LibraryPath>
     <OutDir>.\build</OutDir>
     <IntDir>.\build</IntDir>

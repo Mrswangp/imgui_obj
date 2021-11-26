@@ -2,16 +2,17 @@
 #define LAMP_VERTEX
 #include<iostream>
 namespace shader {
-#if 0
-	const char* lamp_ver = R"( #version 330 core\n
+#if 1
+	const char* lamp_ver = R"( #version 330 core
          layout(location = 0) in vec3 lamp_Pos;
          uniform mat4 lamp_MVP;
          void main()
          {
-          gl_Position =lamp_MVP * vec4(lamp_Pos, 1.0);\n
+          gl_Position =lamp_MVP * vec4(lamp_Pos, 1.0);
          }
          )";
 #endif
+#if 0
 const char* lamp_ver = "#version 330 core\n"
 "layout(location = 0) in vec3 lamp_Pos;\n"
 "uniform mat4 lamp_MVP;\n"
@@ -19,5 +20,6 @@ const char* lamp_ver = "#version 330 core\n"
 "{\n"
 "gl_Position =lamp_MVP * vec4(lamp_Pos, 1.0);\n"
 "}\0";
+#endif
 }
 #endif // !LAMP_VERTEX
