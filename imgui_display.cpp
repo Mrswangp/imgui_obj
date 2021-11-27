@@ -31,6 +31,7 @@ glm::vec3 lightPos(1.2, 1, 1.5);
 glm::vec3 camerapos = glm::vec3(0,0,3); 
 glm::vec3 camerafront = glm::vec3(0, 0, -1);
 glm::vec3 cameraup = glm::vec3(0, 1, 0);
+void register_glfw_callbacks(window& app, glfw_state& app_state);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void window_size_callback(GLFWwindow* window, int width, int height);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -40,11 +41,25 @@ int realsense();
 int opera_pointclound();
 GLFWwindow* init_environment();
 int main()
-{   
-    GLFWwindow* window = init_environment();
-    if (!window) {
+{
+    const int Window_width = 1200;
+    const int Window_height = 800;
+#if 0
+    GLFWwindow* win= init_environment();
+    if (!win) {
         return -1;
     }
+#endif
+    window win(Window_width, Window_height, "RealSense Pointcloud Example");
+    //init glew
+    glewInit();
+
+    //create and bind ImGui
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+    ImGui_ImplGlfwGL3_Init(win, true);
+    ImGui::StyleColorsDark();
     //Initialize various data
     bool ImGui = true;
     bool show_demo_window = true;
@@ -68,40 +83,43 @@ int main()
     float viewField = 90.0f;
   
   //   Read our .obj file
-    std::vector<unsigned short> indices;
-    std::vector<glm::vec3> vertices;
-    std::vector<glm::vec2> texture;
-    std::vector<glm::vec3> normals; // Won't be used at the moment.
-    auto res =obj::load_obj("resource/cube.obj", vertices, texture, normals);
-    if (!res) {
-        printf("load obj file failed!");
-        return -1;
-    }
-    static int number = vertices.size();
-    std::cout << "vertex_indices number is: \n" << number << std::endl;
-    printf("load obj file successfully!\n");
-
+    //std::vector<unsigned short> indices;
+    //std::vector<glm::vec3> vertices;
+    //std::vector<glm::vec2> texture;
+    //std::vector<glm::vec3> normals; // Won't be used at the moment.
+    //auto res =obj::load_obj("resource/cube.obj", vertices, texture, normals);
+    //if (!res) {
+    //    printf("load obj file failed!");
+    //    return -1;
+    //}
+    //static int number = vertices.size();
+ //   std::cout << "vertex_indices number is: \n" << number << std::endl;
+  //  printf("load obj file successfully!\n");
+    bool REALPOINT_FLAG = false;
+   
+  //  std::vector<glm::vec2> frame_uvs;
+   
     // Define vertex buffer and pass vertex buffer to OpenGL
-    GLuint objVAO,vertexbuffer;
-    glGenVertexArrays(1, &objVAO);
-    glBindVertexArray(objVAO);
-    glGenBuffers(1, &vertexbuffer);
+    //GLuint objVAO,vertexbuffer;
+    //glGenVertexArrays(1, &objVAO);
+    //glBindVertexArray(objVAO);
+    //glGenBuffers(1, &vertexbuffer);
 
-    //Copy our vertex array to a vertex buffer for OpenGL
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
-    glVertexAttribPointer(
-        0,        // attribute 0. No particular reason for 0, but must match the layout in the shader.
-        3,        // size
-        GL_FLOAT, // type
-        GL_FALSE, // normalized?
-        0,        // stride
-        (void*)0 // array buffer offset
-    );
-    glEnableVertexAttribArray(0);
+    ////Copy our vertex array to a vertex buffer for OpenGL
+    //glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    //// glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+    //glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
+    //glVertexAttribPointer(
+    //    0,        // attribute 0. No particular reason for 0, but must match the layout in the shader.
+    //    3,        // size
+    //    GL_FLOAT, // type
+    //    GL_FALSE, // normalized?
+    //    0,        // stride
+    //    (void*)0 // array buffer offset
+    //);
+    //glEnableVertexAttribArray(0);
     // add normal 
-    if (normals.size() != 0) {
+  /*  if (normals.size() != 0) {
         GLuint normalbuffer;
         glGenBuffers(1, &normalbuffer);
         glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
@@ -109,23 +127,23 @@ int main()
         glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
         glEnableVertexAttribArray(1);
-    }
-    GLuint lightbuffer, lightVAO;
-    glGenVertexArrays(1, &lightVAO);
-    glBindVertexArray(lightVAO);
-    glGenBuffers(1, &lightbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, lightbuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(light_vertices), light_vertices, GL_STATIC_DRAW);
-   // std::cout << "sizeof vertices is: " << sizeof(light_vertices)/sizeof(light_vertices[0]) << std::endl;
-    glVertexAttribPointer(
-        0,        // attribute 0. No particular reason for 0, but must match the layout in the shader.
-        3,        // size
-        GL_FLOAT, // type
-        GL_FALSE, // normalized?
-        3 * sizeof(float),        // stride
-        (void*)0 // array buffer offset
-    );
-    glEnableVertexAttribArray(0);
+    }*/
+   // GLuint lightbuffer, lightVAO;
+   // glGenVertexArrays(1, &lightVAO);
+   // glBindVertexArray(lightVAO);
+   // glGenBuffers(1, &lightbuffer);
+   // glBindBuffer(GL_ARRAY_BUFFER, lightbuffer);
+   // glBufferData(GL_ARRAY_BUFFER, sizeof(light_vertices), light_vertices, GL_STATIC_DRAW);
+   //// std::cout << "sizeof vertices is: " << sizeof(light_vertices)/sizeof(light_vertices[0]) << std::endl;
+   // glVertexAttribPointer(
+   //     0,        // attribute 0. No particular reason for 0, but must match the layout in the shader.
+   //     3,        // size
+   //     GL_FLOAT, // type
+   //     GL_FALSE, // normalized?
+   //     3 * sizeof(float),        // stride
+   //     (void*)0 // array buffer offset
+   // );
+   // glEnableVertexAttribArray(0);
     //glm::mat4 RotationMatrix45 = glm::rotate((float)3.14f / 4, glm::vec3(0, 1, 0));
     glm::mat4 RotationMatrix45 = glm::rotate(glm::radians(45.0f), glm::vec3(0, 1, 0));
    /* glm::mat4 RotationMatrix_pitch = glm::rotate(glm::radians(pitch), glm::vec3(0, 1, 0));
@@ -171,13 +189,115 @@ int main()
                 return EXIT_FAILURE;
             }
      };
-    while (!glfwWindowShouldClose(window))
+   
+    glfw_state app_state;
+    // register_glfw_callbacks(win, app_state);
+
+    rs2::pointcloud pc;
+    rs2::points points;
+    rs2::pipeline pipe;
+   // std::string path = R"(C:\Users\admin\Desktop\test.ply)";
+    pipe.start();
+    int frame_vernum = 0;
+    while (!glfwWindowShouldClose(win))
     {   
-        
+        auto operation_pointcloud = [&]()
+        {
+            try {
+#if 0            
+                window app(1280, 720, "Realsense point clound example");
+#endif
+            
+
+                std::cout << "entry into pointcloud thread " << std::endl;
+                while (!REALPOINT_FLAG)
+                {
+                    GLuint objVAO, vertexbuffer;
+                    const rs2::vertex* vertices;
+                    const rs2::texture_coordinate* texture;
+                    std::vector<glm::vec3> frame_vertices;
+                    auto frames = pipe.wait_for_frames();
+
+                   // auto color = frames.get_color_frame();
+
+                   // if (!color)
+                       // color = frames.get_infrared_frame();
+                  //  pc.map_to(color);
+                    auto depth = frames.get_depth_frame();
+                    points = pc.calculate(depth);
+                    // app_state.tex.upload(color);
+                   // points.export_to_ply(path, color);
+                    vertices = points.get_vertices();
+                  //  texture = points.get_texture_coordinates();
+                    for (int i = 0; i < points.size(); i++) {
+                        if (vertices[i].z) {
+                            glm::vec3 temp;
+                            temp.x = vertices[i].x;
+                            temp.y = vertices[i].y;
+                            temp.z = vertices[i].z;
+                            frame_vertices.push_back(temp);
+                        }
+                    }
+                    frame_vernum = frame_vertices.size();
+                    std::cout << "frame vertices count is : " << frame_vernum << std::endl;
+                   
+                    glGenVertexArrays(1, &objVAO);
+                    glBindVertexArray(objVAO);
+                    glGenBuffers(1, &vertexbuffer);
+
+                    //Copy our vertex array to a vertex buffer for OpenGL
+                    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+                    // glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+                    glBufferData(GL_ARRAY_BUFFER, frame_vertices.size() * sizeof(glm::vec3), &frame_vertices[0], GL_DYNAMIC_DRAW);
+                    glVertexAttribPointer(
+                        0,        // attribute 0. No particular reason for 0, but must match the layout in the shader.
+                        3,        // size
+                        GL_FLOAT, // type
+                        GL_FALSE, // normalized?
+                        0,        // stride
+                        (void*)0 // array buffer offset
+                    );
+                    glEnableVertexAttribArray(0);
+                    glUseProgram(objprogramID);
+                    glBindVertexArray(objVAO);
+                    glDrawArrays(GL_TRIANGLES, 0, frame_vernum);
+                    glDeleteBuffers(1, &vertexbuffer);
+                    glDeleteVertexArrays(1, &objVAO);
+                 /*   glEnd();
+                    glPopMatrix();
+                    glMatrixMode(GL_PROJECTION);
+                    glPopMatrix();
+                    glPopAttrib();*/
+                    int view_width, view_height;
+                    glfwGetFramebufferSize(win, &view_width, &view_height);
+                    glViewport(0, 0, view_width, view_height);
+                    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                    glfwSwapBuffers(win);
+                    glfwPollEvents();
+                    // draw_pointcloud(win.width(), win.height(), app_state, points);
+                }
+                std::cout << "leave pointcloud thread " << std::endl;
+                return EXIT_SUCCESS;
+            }
+            catch (const rs2::error& e)
+            {
+                std::cerr << "Realsense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n " << e.what() << std::endl;
+                return EXIT_FAILURE;
+            }
+            catch (const std::exception& e)
+            {
+                std::cerr << e.what() << std::endl;
+                return EXIT_FAILURE;
+            }
+        };
+        operation_pointcloud();
+        //test_point.detach();
+#if 0
         auto currentframe = glfwGetTime();
         deltatime = currentframe - lastframe;
         lastframe = currentframe;
-        processInput(window);
+        processInput(win);
         static int speed_divisor = 1;
         float currentTime = glfwGetTime() * speed_divisor;
         stopAngle = glm::radians(90.0f);
@@ -234,9 +354,14 @@ int main()
         if (ImGui::Button("Close calling realsense")) {
             REALSENSE_FLAG = true;
         }
+       
         if (ImGui::Button("pointcloud operation")) {
-            std::thread start_pointcloud(opera_pointclound);
+            REALPOINT_FLAG = false;
+            std::thread start_pointcloud(operation_pointcloud);
             start_pointcloud.detach();
+        }
+        if (ImGui::Button("Close calling operation_pointcloud")) {
+            REALPOINT_FLAG = true;
         }
         //ImGui::LabelText(text,text);
         //glUniform3fv(glGetUniformLocation(objprogramID, "objectColor"), 1, &objectColor[0]);
@@ -250,16 +375,15 @@ int main()
             ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver); // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
             ImGui::ShowDemoWindow(&show_demo_window);
         }
-        
+#endif
         // render window color
-        int view_width, view_height;
-        glfwGetFramebufferSize(window, &view_width, &view_height);
-        glViewport(0, 0, view_width, view_height);
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        ImGui::Render();
-        ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
-
+      //  int view_width, view_height;
+      //  glfwGetFramebufferSize(win, &view_width, &view_height);
+     //   glViewport(0, 0, view_width, view_height);
+      
+      /*  ImGui::Render();
+        ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());*/
+#if 0
         //render light     /*****************-> error:  different render order cause bad results
         glUseProgram(lightprogramID);
         glm::mat4 lamp_model = glm::mat4(1.0f);
@@ -269,8 +393,8 @@ int main()
         glm::mat4 l_MVP = lamp_Projection * glm::lookAt(glm::vec3(0,0,3), glm::vec3(0, 0, 3) +glm::vec3(0,0,-1), glm::vec3(0,1,0)) * lamp_model;
         GLuint lampID = glGetUniformLocation(lightprogramID, "lamp_MVP");
         glUniformMatrix4fv(lampID, 1, GL_FALSE, &l_MVP[0][0]);
-        glBindVertexArray(lightVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+     /*   glBindVertexArray(lightVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);*/
 
         //render obj
         glUseProgram(objprogramID);
@@ -293,15 +417,30 @@ int main()
         //// in the "MVP" uniform
         //glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &t_MVP[0][0]);
        // glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-        glBindVertexArray(objVAO);
-        glDrawArrays(GL_TRIANGLES, 0, number); // 3 indices starting at 0 -> 1 triangle
-      
+      //  glBindVertexArray(objVAO);
+      //  glDrawArrays(GL_TRIANGLES, 0, number); // 3 indices starting at 0 -> 1 triangle
+#endif    
+        //operation_pointcloud();
         // Double buffering. The front buffer holds the final output image, which will be displayed on the screen; All rendering instructions are drawn on the post buffer.
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+      
     }
-
-    delete_resource(vertexbuffer, lightbuffer, objVAO, lightVAO, objprogramID, lightprogramID);
+     GLuint lightbuffer, lightVAO;
+ glGenVertexArrays(1, &lightVAO);
+ glBindVertexArray(lightVAO);
+ glGenBuffers(1, &lightbuffer);
+ glBindBuffer(GL_ARRAY_BUFFER, lightbuffer);
+ glBufferData(GL_ARRAY_BUFFER, sizeof(light_vertices), light_vertices, GL_STATIC_DRAW);
+// std::cout << "sizeof vertices is: " << sizeof(light_vertices)/sizeof(light_vertices[0]) << std::endl;
+ glVertexAttribPointer(
+     0,        // attribute 0. No particular reason for 0, but must match the layout in the shader.
+     3,        // size
+     GL_FLOAT, // type
+     GL_FALSE, // normalized?
+     3 * sizeof(float),        // stride
+     (void*)0 // array buffer offset
+ );
+ glEnableVertexAttribArray(0);
+   // delete_resource(vertexbuffer, lightbuffer, objVAO, lightVAO, objprogramID, lightprogramID);
     return 0;
 }
 void delete_resource(GLuint vertexbuffer, GLuint lightbuffer, GLuint objVAO, GLuint lightVAO, GLuint objprogramID, GLuint lightprogramID)
@@ -455,42 +594,48 @@ catch (const std::exception& e)
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
 }
-void register_glfw_callbacks(window& app, glfw_state& app_state);
-int opera_pointclound( )try
-{
-    window app(1280, 720, "Realsense point clound example");
-    glfw_state app_state;
-    register_glfw_callbacks(app, app_state);
-    rs2::pointcloud pc;
-    rs2::points points;
-    rs2::pipeline pipe;
-    pipe.start();
-    while (app)
-    {
-        auto frames = pipe.wait_for_frames();
 
-        auto color = frames.get_color_frame();
+int opera_pointclound( )
+{   
+    try {
+        window app(1280, 720, "Realsense point clound example");
+        glfw_state app_state;
+        register_glfw_callbacks(app, app_state);
+        rs2::pointcloud pc;
+        rs2::points points;
+        rs2::pipeline pipe;
+        pipe.start();
+        std::string path = R"(C:\Users\admin\Desktop\test.ply)";
+        while (app)
+        {
+            auto frames = pipe.wait_for_frames();
 
-        if (!color)
-            color = frames.get_infrared_frame();
-        pc.map_to(color);
-        auto depth = frames.get_depth_frame();
-        points = pc.calculate(depth);
-        app_state.tex.upload(color);
-        draw_pointcloud(app.width(), app.height(), app_state, points);
+            auto color = frames.get_color_frame();
+
+            if (!color)
+                color = frames.get_infrared_frame();
+            pc.map_to(color);
+            auto depth = frames.get_depth_frame();
+            points = pc.calculate(depth);
+            app_state.tex.upload(color);
+            points.export_to_ply(path, color);
+            auto vertices = points.get_vertices();
+            // draw_pointcloud(app.width(), app.height(), app_state, points);
+        }
+        return EXIT_SUCCESS;
     }
-    return EXIT_SUCCESS;
+    catch (const rs2::error& e)
+    {
+        std::cerr << "Realsense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 }
-catch (const rs2::error& e)
-{
-    std::cerr << "Realsense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n " << e.what() << std::endl;
-    return EXIT_FAILURE;
-}
-catch (const std::exception& e)
-{
-    std::cerr << e.what() << std::endl;
-    return EXIT_FAILURE;
-}
+
 //int main()
 //{
 //    std::thread test(opera_pointclound);
