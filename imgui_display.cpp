@@ -204,11 +204,12 @@ int main()
     };*/
     auto operation_pointcloud = [&]()
     {
-        try {
-            std::cout << "entry into pointcloud thread " << std::endl;
-            while (!REALPOINT_FLAG)
-            {
-
+       // try {
+          //  std::cout << "entry into pointcloud thread " << std::endl;
+          //  while (!REALPOINT_FLAG)
+       //     {
+                glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 GLuint objVAO, vertexbuffer;
                 const rs2::vertex* vertices;
                 const rs2::texture_coordinate* texture;
@@ -232,7 +233,7 @@ int main()
                         temp.x = vertices[i].x;
                         temp.y = vertices[i].y;
                         temp.z = vertices[i].z;
-                        frame_vertices.push_back(temp);
+                        frame_vertices.emplace_back(temp);
                     }
                 }
                 frame_vernum = frame_vertices.size();
@@ -323,21 +324,24 @@ int main()
                     REALSENSE_FLAG = true;
                 }
                 if (ImGui::Button("pointcloud operation")) {
-                    std::thread start_pointcloud(opera_pointclound);
-                    start_pointcloud.detach();
+                   /* std::thread start_pointcloud(opera_pointclound);
+                    start_pointcloud.detach();*/
+                    REALPOINT_FLAG = false;
                 }
-
+                if (ImGui::Button("Close receive frame")) {
+                    REALPOINT_FLAG = true;
+                }
                 //ImGui::LabelText(text,text);
                 //glUniform3fv(glGetUniformLocation(objprogramID, "objectColor"), 1, &objectColor[0]);
                 glUniform1f(glGetUniformLocation(objprogramID, "alpha"), transparency);
                 glUniform3fv(glGetUniformLocation(objprogramID, "objectColor"), 1, &objectColor[0]);
                 glUniform3fv(glGetUniformLocation(objprogramID, "lightColor"), 1, &lightColor[0]);
                 ImGui::End();
-                if (show_demo_window)
-                {
-                    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver); // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
-                    ImGui::ShowDemoWindow(&show_demo_window);
-                }
+                //if (show_demo_window)
+                //{
+                //    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver); // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
+                //    ImGui::ShowDemoWindow(&show_demo_window);
+                //}
                 ImGui::Render();
                 ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
                 //render obj
@@ -358,7 +362,10 @@ int main()
                 glUniformMatrix4fv(proID, 1, GL_FALSE, &Projection[0][0]);
                 glUseProgram(objprogramID);
                 glBindVertexArray(objVAO);
-                glDrawArrays(GL_TRIANGLES, 0, frame_vernum);
+               // glDrawArrays(GL_TRIANGLES, 0, frame_vernum);
+                 glDrawArrays(GL_POINTS, 0, frame_vernum);
+               // glDrawArrays(GL_PROJECTION, 0, frame_vernum);
+                
                 glDeleteBuffers(1, &vertexbuffer);
                 glDeleteVertexArrays(1, &objVAO);
                 /*   glEnd();
@@ -373,11 +380,11 @@ int main()
                 glfwSwapBuffers(win);
                 glfwPollEvents();
                 // draw_pointcloud(win.width(), win.height(), app_state, points);
-            }
-            std::cout << "leave pointcloud thread " << std::endl;
+         //   }
+         /*   std::cout << "leave pointcloud thread " << std::endl;*/
             return EXIT_SUCCESS;
-        }
-        catch (const rs2::error& e)
+     //   }
+       /* catch (const rs2::error& e)
         {
             std::cerr << "Realsense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n " << e.what() << std::endl;
             return EXIT_FAILURE;
@@ -386,12 +393,11 @@ int main()
         {
             std::cerr << e.what() << std::endl;
             return EXIT_FAILURE;
-        }
+        }*/
     };
     while (!glfwWindowShouldClose(win))
     {
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+       
         operation_pointcloud();
     }
    // delete_resource(vertexbuffer, lightbuffer, objVAO, lightVAO, objprogramID, lightprogramID);
@@ -590,10 +596,3 @@ int opera_pointclound( )
     }
 }
 
-//int main()
-//{
-//    std::thread test(opera_pointclound);
-//    test.join();
-//    return 0;
-//
-//}
