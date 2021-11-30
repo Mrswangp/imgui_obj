@@ -199,247 +199,201 @@ int main()
    // std::string path = R"(C:\Users\admin\Desktop\test.ply)";
     pipe.start();
     int frame_vernum = 0;
-    while (!glfwWindowShouldClose(win))
-    {   
-        auto operation_pointcloud = [&]()
-        {
-            try {
-#if 0            
-                window app(1280, 720, "Realsense point clound example");
-#endif
-            
+  /*  float light_vertices[] = {
+         #include"light_vertex.inc"
+    };*/
+    auto operation_pointcloud = [&]()
+    {
+        try {
+            std::cout << "entry into pointcloud thread " << std::endl;
+            while (!REALPOINT_FLAG)
+            {
 
-                std::cout << "entry into pointcloud thread " << std::endl;
-                while (!REALPOINT_FLAG)
-                {
-                    GLuint objVAO, vertexbuffer;
-                    const rs2::vertex* vertices;
-                    const rs2::texture_coordinate* texture;
-                    std::vector<glm::vec3> frame_vertices;
-                    auto frames = pipe.wait_for_frames();
+                GLuint objVAO, vertexbuffer;
+                const rs2::vertex* vertices;
+                const rs2::texture_coordinate* texture;
+                std::vector<glm::vec3> frame_vertices;
+                auto frames = pipe.wait_for_frames();
 
-                   // auto color = frames.get_color_frame();
+                // auto color = frames.get_color_frame();
 
-                   // if (!color)
-                       // color = frames.get_infrared_frame();
-                  //  pc.map_to(color);
-                    auto depth = frames.get_depth_frame();
-                    points = pc.calculate(depth);
-                    // app_state.tex.upload(color);
-                   // points.export_to_ply(path, color);
-                    vertices = points.get_vertices();
-                  //  texture = points.get_texture_coordinates();
-                    for (int i = 0; i < points.size(); i++) {
-                        if (vertices[i].z) {
-                            glm::vec3 temp;
-                            temp.x = vertices[i].x;
-                            temp.y = vertices[i].y;
-                            temp.z = vertices[i].z;
-                            frame_vertices.push_back(temp);
-                        }
+                // if (!color)
+                    // color = frames.get_infrared_frame();
+               //  pc.map_to(color);
+                auto depth = frames.get_depth_frame();
+                points = pc.calculate(depth);
+                // app_state.tex.upload(color);
+               // points.export_to_ply(path, color);
+                vertices = points.get_vertices();
+                //  texture = points.get_texture_coordinates();
+                for (int i = 0; i < points.size(); i++) {
+                    if (vertices[i].z) {
+                        glm::vec3 temp;
+                        temp.x = vertices[i].x;
+                        temp.y = vertices[i].y;
+                        temp.z = vertices[i].z;
+                        frame_vertices.push_back(temp);
                     }
-                    frame_vernum = frame_vertices.size();
-                    std::cout << "frame vertices count is : " << frame_vernum << std::endl;
-                   
-                    glGenVertexArrays(1, &objVAO);
-                    glBindVertexArray(objVAO);
-                    glGenBuffers(1, &vertexbuffer);
-
-                    //Copy our vertex array to a vertex buffer for OpenGL
-                    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-                    // glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
-                    glBufferData(GL_ARRAY_BUFFER, frame_vertices.size() * sizeof(glm::vec3), &frame_vertices[0], GL_DYNAMIC_DRAW);
-                    glVertexAttribPointer(
-                        0,        // attribute 0. No particular reason for 0, but must match the layout in the shader.
-                        3,        // size
-                        GL_FLOAT, // type
-                        GL_FALSE, // normalized?
-                        0,        // stride
-                        (void*)0 // array buffer offset
-                    );
-                    glEnableVertexAttribArray(0);
-                    glUseProgram(objprogramID);
-                    glBindVertexArray(objVAO);
-                    glDrawArrays(GL_TRIANGLES, 0, frame_vernum);
-                    glDeleteBuffers(1, &vertexbuffer);
-                    glDeleteVertexArrays(1, &objVAO);
-                 /*   glEnd();
-                    glPopMatrix();
-                    glMatrixMode(GL_PROJECTION);
-                    glPopMatrix();
-                    glPopAttrib();*/
-                    int view_width, view_height;
-                    glfwGetFramebufferSize(win, &view_width, &view_height);
-                    glViewport(0, 0, view_width, view_height);
-                    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                    glfwSwapBuffers(win);
-                    glfwPollEvents();
-                    // draw_pointcloud(win.width(), win.height(), app_state, points);
                 }
-                std::cout << "leave pointcloud thread " << std::endl;
-                return EXIT_SUCCESS;
-            }
-            catch (const rs2::error& e)
-            {
-                std::cerr << "Realsense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n " << e.what() << std::endl;
-                return EXIT_FAILURE;
-            }
-            catch (const std::exception& e)
-            {
-                std::cerr << e.what() << std::endl;
-                return EXIT_FAILURE;
-            }
-        };
-        operation_pointcloud();
-        //test_point.detach();
-#if 0
-        auto currentframe = glfwGetTime();
-        deltatime = currentframe - lastframe;
-        lastframe = currentframe;
-        processInput(win);
-        static int speed_divisor = 1;
-        float currentTime = glfwGetTime() * speed_divisor;
-        stopAngle = glm::radians(90.0f);
-        rotateFpara = rotateflag ? (float)currentTime : stopAngle;
-        // Projection matrix : 45?Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-        glm::mat4 Projection = isOrthoCamera ? glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 10.0f) : glm::perspective(glm::radians(viewField), 4.0f / 3.0f, 0.1f, 100.0f);
-       // glm::mat4 Projection = glm::perspective(glm::radians(fov), (float)Window_width / (float)Window_height, 0.1f, 100.0f);
-        glm::vec3 rotationAxis = glm::vec3(0, 1, 0);
-        /*glm::mat4 RotationMatrix = glm::rotate((float)currentTime, rotationAxis);*/
-        glm::mat4 RotationMatrix = glm::rotate(rotateFpara, rotationAxis);
-        // Camera matrix
-        glm::mat4 inial_view = glm::lookAt(glm::vec3(camerapos.x,camerapos.y,camerapos.z), camerapos + camerafront, cameraup);
-      //  glm::mat4 View = rotateflag?(inial_view * RotationMatrix * RotationMatrix45): inial_view;
-        glm::mat4 View = inial_view * RotationMatrix * RotationMatrix45;
-        //glm::mat4 View = inial_view * RotationMatrix * rotationcombine;
-        glm::mat4 Model = glm::mat4(1.0f);
-        glm::mat4 t_MVP = Projection * View * Model;
-     
-        // create ImGui interface
-        ImGui_ImplGlfwGL3_NewFrame();
-        ImGui::Begin("Panel", &ImGui, ImGuiWindowFlags_MenuBar);
-        ImGui::RadioButton("perspective camera", &isOrthoCamera, 0);
-        ImGui::SameLine();
-        ImGui::RadioButton("ortho camera", &isOrthoCamera, 1);
-        ImGui::RadioButton("start rotate", &rotateflag, 1);
-        ImGui::SameLine();
-        ImGui::RadioButton("stop rotate", &rotateflag, 0);
-        if (ImGui::Button("Triple speed")) {
-            speed_divisor = 3;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Fivefold speed")) {
-            speed_divisor = 5;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Sevenfold speed")) {
-            speed_divisor = 7;
-        }
-        //ImGui::SliderFloat("x",&camerapos.x,-15.0f,15.0f,"campos.x=%0.3f");
-        ImGui::SliderFloat("Direction of light", &camerapos.y, -15.0f, 15.0f, "campos.y=%0.3f");
-       // ImGui::SliderFloat("z", &camerapos.z, -15.0f, 15.0f, "campos.z=%0.3f");
-        ImGui::SliderFloat("viewField", &viewField, 0.0f, 90.0f, "viewField = %.3f");
-         ImGui::SliderInt("Shininess", &ShininessValue, 2, 256);
-       // ImGui::SliderFloat("radius", &radius, 0.0f, 20.0f, "radius = %.3f");
-        ImGui::ColorEdit3("object color", (float*)&objectColor);
-        ImGui::ColorEdit3("light color", (float*)&lightColor);
-        ImGui::SliderFloat("transparency", (float*)&transparency, 0.0f, 1.0f, "transparency = %.3f");
-        if (ImGui::Button("test distance with realsense sdk")) {
-            REALSENSE_FLAG = false;
-            std::thread start_realsense(realsense_sample);
-            start_realsense.detach();
-        }
-        ImGui::Text("camera to object distance : %f ", dis_to_center);
-        if (ImGui::Button("Close calling realsense")) {
-            REALSENSE_FLAG = true;
-        }
-       
-        if (ImGui::Button("pointcloud operation")) {
-            REALPOINT_FLAG = false;
-            std::thread start_pointcloud(operation_pointcloud);
-            start_pointcloud.detach();
-        }
-        if (ImGui::Button("Close calling operation_pointcloud")) {
-            REALPOINT_FLAG = true;
-        }
-        //ImGui::LabelText(text,text);
-        //glUniform3fv(glGetUniformLocation(objprogramID, "objectColor"), 1, &objectColor[0]);
-        glUniform1f(glGetUniformLocation(objprogramID, "alpha"), transparency);
-        glUniform3fv(glGetUniformLocation(objprogramID,"objectColor"),1, &objectColor[0]);
-        glUniform3fv(glGetUniformLocation(objprogramID, "lightColor"), 1, &lightColor[0]);
-        ImGui::End();
+                frame_vernum = frame_vertices.size();
+                std::cout << "frame vertices count is : " << frame_vernum << std::endl;
 
-        if (show_demo_window)
+                glGenVertexArrays(1, &objVAO);
+                glBindVertexArray(objVAO);
+                glGenBuffers(1, &vertexbuffer);
+
+                //Copy our vertex array to a vertex buffer for OpenGL
+                glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+                // glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+                glBufferData(GL_ARRAY_BUFFER, frame_vertices.size() * sizeof(glm::vec3), &frame_vertices[0], GL_DYNAMIC_DRAW);
+                glVertexAttribPointer(
+                    0,        // attribute 0. No particular reason for 0, but must match the layout in the shader.
+                    3,        // size
+                    GL_FLOAT, // type
+                    GL_FALSE, // normalized?
+                    0,        // stride
+                    (void*)0 // array buffer offset
+                );
+                glEnableVertexAttribArray(0);
+
+
+                //ImGui::LabelText(text,text);
+                //glUniform3fv(glGetUniformLocation(objprogramID, "objectColor"), 1, &objectColor[0]);
+                glUniform1f(glGetUniformLocation(objprogramID, "alpha"), transparency);
+                glUniform3fv(glGetUniformLocation(objprogramID, "objectColor"), 1, &objectColor[0]);
+                glUniform3fv(glGetUniformLocation(objprogramID, "lightColor"), 1, &lightColor[0]);
+                auto currentframe = glfwGetTime();
+                deltatime = currentframe - lastframe;
+                lastframe = currentframe;
+                processInput(win);
+                static int speed_divisor = 1;
+                float currentTime = glfwGetTime() * speed_divisor;
+                stopAngle = glm::radians(90.0f);
+                rotateFpara = rotateflag ? (float)currentTime : stopAngle;
+                // Projection matrix : 45?Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+                glm::mat4 Projection = isOrthoCamera ? glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 10.0f) : glm::perspective(glm::radians(viewField), 4.0f / 3.0f, 0.1f, 100.0f);
+                // glm::mat4 Projection = glm::perspective(glm::radians(fov), (float)Window_width / (float)Window_height, 0.1f, 100.0f);
+                glm::vec3 rotationAxis = glm::vec3(0, 1, 0);
+                /*glm::mat4 RotationMatrix = glm::rotate((float)currentTime, rotationAxis);*/
+                glm::mat4 RotationMatrix = glm::rotate(rotateFpara, rotationAxis);
+                // Camera matrix
+                glm::mat4 inial_view = glm::lookAt(glm::vec3(camerapos.x, camerapos.y, camerapos.z), camerapos + camerafront, cameraup);
+                //  glm::mat4 View = rotateflag?(inial_view * RotationMatrix * RotationMatrix45): inial_view;
+                glm::mat4 View = inial_view * RotationMatrix * RotationMatrix45;
+                //glm::mat4 View = inial_view * RotationMatrix * rotationcombine;
+                glm::mat4 Model = glm::mat4(1.0f);
+                glm::mat4 t_MVP = Projection * View * Model;
+
+                // create ImGui interface
+                ImGui_ImplGlfwGL3_NewFrame();
+                ImGui::Begin("Panel", &ImGui, ImGuiWindowFlags_MenuBar);
+                ImGui::RadioButton("perspective camera", &isOrthoCamera, 0);
+                ImGui::SameLine();
+                ImGui::RadioButton("ortho camera", &isOrthoCamera, 1);
+                ImGui::RadioButton("start rotate", &rotateflag, 1);
+                ImGui::SameLine();
+                ImGui::RadioButton("stop rotate", &rotateflag, 0);
+                if (ImGui::Button("Triple speed")) {
+                    speed_divisor = 3;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Fivefold speed")) {
+                    speed_divisor = 5;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Sevenfold speed")) {
+                    speed_divisor = 7;
+                }
+                //ImGui::SliderFloat("x",&camerapos.x,-15.0f,15.0f,"campos.x=%0.3f");
+                ImGui::SliderFloat("Direction of light", &camerapos.y, -15.0f, 15.0f, "campos.y=%0.3f");
+                // ImGui::SliderFloat("z", &camerapos.z, -15.0f, 15.0f, "campos.z=%0.3f");
+                ImGui::SliderFloat("viewField", &viewField, 0.0f, 90.0f, "viewField = %.3f");
+                ImGui::SliderInt("Shininess", &ShininessValue, 2, 256);
+                // ImGui::SliderFloat("radius", &radius, 0.0f, 20.0f, "radius = %.3f");
+                ImGui::ColorEdit3("object color", (float*)&objectColor);
+                ImGui::ColorEdit3("light color", (float*)&lightColor);
+                ImGui::SliderFloat("transparency", (float*)&transparency, 0.0f, 1.0f, "transparency = %.3f");
+                if (ImGui::Button("test distance with realsense sdk")) {
+                    REALSENSE_FLAG = false;
+                    std::thread start_realsense(realsense_sample);
+                    start_realsense.detach();
+                }
+                ImGui::Text("camera to object distance : %f ", dis_to_center);
+                if (ImGui::Button("Close calling realsense")) {
+                    REALSENSE_FLAG = true;
+                }
+                if (ImGui::Button("pointcloud operation")) {
+                    std::thread start_pointcloud(opera_pointclound);
+                    start_pointcloud.detach();
+                }
+
+                //ImGui::LabelText(text,text);
+                //glUniform3fv(glGetUniformLocation(objprogramID, "objectColor"), 1, &objectColor[0]);
+                glUniform1f(glGetUniformLocation(objprogramID, "alpha"), transparency);
+                glUniform3fv(glGetUniformLocation(objprogramID, "objectColor"), 1, &objectColor[0]);
+                glUniform3fv(glGetUniformLocation(objprogramID, "lightColor"), 1, &lightColor[0]);
+                ImGui::End();
+                if (show_demo_window)
+                {
+                    ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver); // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
+                    ImGui::ShowDemoWindow(&show_demo_window);
+                }
+                ImGui::Render();
+                ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+                //render obj
+                glUseProgram(objprogramID);
+                GLuint ShininessID = glGetUniformLocation(objprogramID, "Shininess");
+                glUniform1i(ShininessID, ShininessValue);
+
+                // Get a handle for our "MVP" uniform
+                GLuint lightID = glGetUniformLocation(objprogramID, "lightPos");
+                glUniform3fv(lightID, 1, &lightPos[0]);
+                GLuint viewposID = glGetUniformLocation(objprogramID, "viewPos");
+                glUniform3fv(viewposID, 1, &camerapos[0]);
+                GLuint modelID = glGetUniformLocation(objprogramID, "model");
+                glUniformMatrix4fv(modelID, 1, GL_FALSE, &Model[0][0]);
+                GLuint viewID = glGetUniformLocation(objprogramID, "view");
+                glUniformMatrix4fv(viewID, 1, GL_FALSE, &View[0][0]);
+                GLuint proID = glGetUniformLocation(objprogramID, "projection");
+                glUniformMatrix4fv(proID, 1, GL_FALSE, &Projection[0][0]);
+                glUseProgram(objprogramID);
+                glBindVertexArray(objVAO);
+                glDrawArrays(GL_TRIANGLES, 0, frame_vernum);
+                glDeleteBuffers(1, &vertexbuffer);
+                glDeleteVertexArrays(1, &objVAO);
+                /*   glEnd();
+                   glPopMatrix();
+                   glMatrixMode(GL_PROJECTION);
+                   glPopMatrix();
+                   glPopAttrib();*/
+                int view_width, view_height;
+                glfwGetFramebufferSize(win, &view_width, &view_height);
+                glViewport(0, 0, view_width, view_height);
+
+                glfwSwapBuffers(win);
+                glfwPollEvents();
+                // draw_pointcloud(win.width(), win.height(), app_state, points);
+            }
+            std::cout << "leave pointcloud thread " << std::endl;
+            return EXIT_SUCCESS;
+        }
+        catch (const rs2::error& e)
         {
-            ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver); // Normally user code doesn't need/want to call this because positions are saved in .ini file anyway. Here we just want to make the demo initial state a bit more friendly!
-            ImGui::ShowDemoWindow(&show_demo_window);
+            std::cerr << "Realsense error calling " << e.get_failed_function() << "(" << e.get_failed_args() << "):\n " << e.what() << std::endl;
+            return EXIT_FAILURE;
         }
-#endif
-        // render window color
-      //  int view_width, view_height;
-      //  glfwGetFramebufferSize(win, &view_width, &view_height);
-     //   glViewport(0, 0, view_width, view_height);
-      
-      /*  ImGui::Render();
-        ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());*/
-#if 0
-        //render light     /*****************-> error:  different render order cause bad results
-        glUseProgram(lightprogramID);
-        glm::mat4 lamp_model = glm::mat4(1.0f);
-        lamp_model = glm::translate(lamp_model, lightPos);
-        lamp_model = glm::scale(lamp_model, glm::vec3(0.1f)); // a smaller cube
-        glm::mat4 lamp_Projection = isOrthoCamera ? glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 10.0f) : glm::perspective(glm::radians(90.0f), 4.0f / 3.0f, 0.1f, 100.0f);
-        glm::mat4 l_MVP = lamp_Projection * glm::lookAt(glm::vec3(0,0,3), glm::vec3(0, 0, 3) +glm::vec3(0,0,-1), glm::vec3(0,1,0)) * lamp_model;
-        GLuint lampID = glGetUniformLocation(lightprogramID, "lamp_MVP");
-        glUniformMatrix4fv(lampID, 1, GL_FALSE, &l_MVP[0][0]);
-     /*   glBindVertexArray(lightVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);*/
-
-        //render obj
-        glUseProgram(objprogramID);
-        GLuint ShininessID = glGetUniformLocation(objprogramID,"Shininess");
-        glUniform1i(ShininessID, ShininessValue);
-
-        // Get a handle for our "MVP" uniform
-        GLuint lightID= glGetUniformLocation(objprogramID, "lightPos");
-        glUniform3fv(lightID, 1, &lightPos[0]);
-        GLuint viewposID = glGetUniformLocation(objprogramID, "viewPos");
-        glUniform3fv(viewposID, 1, &camerapos[0]);
-        GLuint modelID= glGetUniformLocation(objprogramID, "model");
-        glUniformMatrix4fv(modelID, 1, GL_FALSE, &Model[0][0]);
-        GLuint viewID = glGetUniformLocation(objprogramID, "view");
-        glUniformMatrix4fv(viewID, 1, GL_FALSE, &View[0][0]);
-        GLuint proID = glGetUniformLocation(objprogramID, "projection");
-        glUniformMatrix4fv(proID, 1, GL_FALSE, &Projection[0][0]);
-        //GLuint MatrixID = glGetUniformLocation(objprogramID, "obj_MVP");
-        //// Send our transformation to the currently bound shader,
-        //// in the "MVP" uniform
-        //glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &t_MVP[0][0]);
-       // glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-      //  glBindVertexArray(objVAO);
-      //  glDrawArrays(GL_TRIANGLES, 0, number); // 3 indices starting at 0 -> 1 triangle
-#endif    
-        //operation_pointcloud();
-        // Double buffering. The front buffer holds the final output image, which will be displayed on the screen; All rendering instructions are drawn on the post buffer.
-      
+        catch (const std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+            return EXIT_FAILURE;
+        }
+    };
+    while (!glfwWindowShouldClose(win))
+    {
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        operation_pointcloud();
     }
-     GLuint lightbuffer, lightVAO;
- glGenVertexArrays(1, &lightVAO);
- glBindVertexArray(lightVAO);
- glGenBuffers(1, &lightbuffer);
- glBindBuffer(GL_ARRAY_BUFFER, lightbuffer);
- glBufferData(GL_ARRAY_BUFFER, sizeof(light_vertices), light_vertices, GL_STATIC_DRAW);
-// std::cout << "sizeof vertices is: " << sizeof(light_vertices)/sizeof(light_vertices[0]) << std::endl;
- glVertexAttribPointer(
-     0,        // attribute 0. No particular reason for 0, but must match the layout in the shader.
-     3,        // size
-     GL_FLOAT, // type
-     GL_FALSE, // normalized?
-     3 * sizeof(float),        // stride
-     (void*)0 // array buffer offset
- );
- glEnableVertexAttribArray(0);
    // delete_resource(vertexbuffer, lightbuffer, objVAO, lightVAO, objprogramID, lightprogramID);
     return 0;
 }
