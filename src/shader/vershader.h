@@ -34,14 +34,21 @@ namespace shader
 		uniform mat4 model;
 		uniform mat4 view;
 		uniform mat4 projection;
+        uniform mat4 trans;
+        uniform mat4 rotate_X;
+        uniform mat4 rotate_Y;
+        uniform mat4 rotate_Z;
 		void main()
 		{
 		FragPos = vec3(model*vec4(vertexPosition_modelspace,1.0));
-		Normal = mat3(transpose(inverse(model))) * vertexNormal;
+		//Normal = mat3(transpose(inverse(model))) * vertexNormal;
 		// Output position of the vertex, in clip space : MVP * position
 		//gl_Position = obj_MVP * vec4(vertexPosition_modelspace, 1);
-		gl_Position = projection * view * vec4(FragPos,1.0);
-		};)"; 
+        //first  translation and rotation combination
+        //gl_Position =  trans * projection * view * rotate_Z * rotate_Y * rotate_X *vec4(FragPos,1.0);
+        //second translation and rotation combination
+		gl_Position = rotate_Z * rotate_Y * rotate_X * trans * projection * view * vec4(FragPos,1.0);
+		};)";
 #endif
 }
 #endif // !VERTEX_SHADER

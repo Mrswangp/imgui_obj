@@ -202,6 +202,12 @@ int main()
   /*  float light_vertices[] = {
          #include"light_vertex.inc"
     };*/
+    float X_axis = 0;
+    float Y_axis = 0;
+    float Z_axis = 0;
+    float X_angle = 0;
+    float Y_angle = 0;
+    float Z_angle = 0;
     auto operation_pointcloud = [&]()
     {
        // try {
@@ -284,7 +290,14 @@ int main()
                 //glm::mat4 View = inial_view * RotationMatrix * rotationcombine;
                 glm::mat4 Model = glm::mat4(1.0f);
                 glm::mat4 t_MVP = Projection * View * Model;
-
+                glm::mat4 trans = glm::mat4(1.0f);
+                trans = glm::translate(trans, glm::vec3(X_axis, Y_axis, Z_axis));
+                glm::mat4 rotate_init_x = glm::mat4(1.0f);
+                rotate_init_x = glm::rotate(rotate_init_x, glm::radians(X_angle), glm::vec3(1.0, 0.0, 0.0));
+                glm::mat4 rotate_init_y = glm::mat4(1.0f);
+                rotate_init_y = glm::rotate(rotate_init_y, glm::radians(Y_angle), glm::vec3(0.0, 1.0, 0.0));
+                glm::mat4 rotate_init_z = glm::mat4(1.0f);
+                rotate_init_z = glm::rotate(rotate_init_z, glm::radians(Z_angle), glm::vec3(0.0, 0.0, 1.0));
                 // create ImGui interface
                 ImGui_ImplGlfwGL3_NewFrame();
                 ImGui::Begin("Panel", &ImGui, ImGuiWindowFlags_MenuBar);
@@ -309,6 +322,19 @@ int main()
                 ImGui::SliderFloat("Direction of light", &camerapos.y, -15.0f, 15.0f, "campos.y=%0.3f");
                 // ImGui::SliderFloat("z", &camerapos.z, -15.0f, 15.0f, "campos.z=%0.3f");
                 ImGui::SliderFloat("viewField", &viewField, 0.0f, 90.0f, "viewField = %.3f");
+                ImGui::SliderInt("Shininess", &ShininessValue, 2, 256);
+                if (ImGui::TreeNode("Translation")) {
+                    ImGui::SliderFloat("X", &X_axis, -1.0f, 1.0f, "X_axis distance=%.2f");
+                    ImGui::SliderFloat("Y", &Y_axis, -1.0f, 1.0f, "Y_axis distance=%.2f");
+                    ImGui::SliderFloat("Z", &Z_axis, -1.0f, 1.0f, "Z_axis distance=%.2f");
+                    ImGui::TreePop();
+                }
+                if (ImGui::TreeNode("Rotation")) {
+                    ImGui::SliderFloat("X", &X_angle, -180.0f, 180.0f, "X_angle=%.2f");
+                    ImGui::SliderFloat("Y", &Y_angle, -180.0f, 180.0f, "Y_angle=%.2f");
+                    ImGui::SliderFloat("Z", &Z_angle, -180.0f, 180.0f, "Z_angle=%.2f");
+                    ImGui::TreePop();
+                }
                 ImGui::SliderInt("Shininess", &ShininessValue, 2, 256);
                 // ImGui::SliderFloat("radius", &radius, 0.0f, 20.0f, "radius = %.3f");
                 ImGui::ColorEdit3("object color", (float*)&objectColor);
@@ -360,6 +386,14 @@ int main()
                 glUniformMatrix4fv(viewID, 1, GL_FALSE, &View[0][0]);
                 GLuint proID = glGetUniformLocation(objprogramID, "projection");
                 glUniformMatrix4fv(proID, 1, GL_FALSE, &Projection[0][0]);
+                GLuint transID = glGetUniformLocation(objprogramID, "trans");
+                glUniformMatrix4fv(transID, 1, GL_FALSE, &trans[0][0]);
+                GLuint rotate_x_ID = glGetUniformLocation(objprogramID, "rotate_X");
+                glUniformMatrix4fv(rotate_x_ID, 1, GL_FALSE, &rotate_init_x[0][0]);
+                GLuint rotate_y_ID = glGetUniformLocation(objprogramID, "rotate_Y");
+                glUniformMatrix4fv(rotate_y_ID, 1, GL_FALSE, &rotate_init_y[0][0]);
+                GLuint rotate_z_ID = glGetUniformLocation(objprogramID, "rotate_Z");
+                glUniformMatrix4fv(rotate_z_ID, 1, GL_FALSE, &rotate_init_z[0][0]);
                 glUseProgram(objprogramID);
                 glBindVertexArray(objVAO);
                // glDrawArrays(GL_TRIANGLES, 0, frame_vernum);
