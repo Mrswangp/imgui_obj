@@ -44,10 +44,14 @@ namespace shader
 		//Normal = mat3(transpose(inverse(model))) * vertexNormal;
 		// Output position of the vertex, in clip space : MVP * position
 		//gl_Position = obj_MVP * vec4(vertexPosition_modelspace, 1);
-        //first  translation and rotation combination
-        //gl_Position =  trans * projection * view * rotate_Z * rotate_Y * rotate_X *vec4(FragPos,1.0);
-        //second translation and rotation combination
-		gl_Position = rotate_Z * rotate_Y * rotate_X * trans * projection * view * vec4(FragPos,1.0);
+        //first translation and rotation combination
+         // gl_Position = trans_x_y * trans_z * projection * view * rotate_Z * rotate_Y * rotate_X * vec4(FragPos,1.0);
+         //second translation and rotation combination
+		//gl_Position = projection * rotate_Z * rotate_Y * rotate_X * trans_x_y * view * trans_z* vec4(FragPos,1.0);
+         //third translation and rotation combination
+         //gl_Position = rotate_Z * rotate_Y * rotate_X *  trans_x_y * trans_z * projection * view * vec4(FragPos,1.0);
+        //fourth translation and rotation combination
+         gl_Position =  projection * view * rotate_Z * rotate_Y * rotate_X * trans *vec4(FragPos,1.0);
 		};)";
 #endif
 }
